@@ -1,16 +1,86 @@
 [
   {
-    "name": "an empty title is refused",
+    "name": "an empty or missing string is refused",
     "file": "crates/core/src/page.rs",
-    "find": "if strings.title.trim().is_empty() {",
+    "find": "if strings.get(*key).map(|v| v.trim().is_empty()).unwrap_or(true) {",
     "replace": "if false {",
-    "test": "an_empty_title_is_rejected_by_name"
+    "test": "an_empty_or_missing_key_is_rejected_by_name"
   },
   {
     "name": "an unknown action is refused",
     "file": "crates/core/src/api.rs",
     "find": "other => return Err(format!(\"Unknown action \\\"{other}\\\".\")),",
     "replace": "_ => {}",
-    "test": "act_refuses_an_unknown_action"
+    "test": "unknown_actions_and_bad_values_are_refused_by_name"
+  },
+  {
+    "name": "binary operators get medium space",
+    "file": "crates/core/src/layout.rs",
+    "find": "(Ord, Bin) | (Bin, Ord) | (Bin, Op) | (Bin, Open) | (Bin, Inner) | (Close, Bin) | (Inner, Bin) => med,",
+    "replace": "(Ord, Bin) | (Bin, Ord) | (Bin, Op) | (Bin, Open) | (Bin, Inner) | (Close, Bin) | (Inner, Bin) => thin,",
+    "test": "a_row_spaces_atoms_by_class"
+  },
+  {
+    "name": "the fifth concept gets no colour",
+    "file": "crates/core/src/sheet.rs",
+    "find": "colour: num <= COLOUR_BUDGET,",
+    "replace": "colour: true,",
+    "test": "the_fifth_concept_gets_no_colour_but_keeps_pattern_and_number"
+  },
+  {
+    "name": "each concept gets the next pattern",
+    "file": "crates/core/src/sheet.rs",
+    "find": "pattern: Pattern::ALL[(num - 1) % Pattern::ALL.len()],",
+    "replace": "pattern: Pattern::Solid,",
+    "test": "a_sheet_reads_concepts_controls_plots_and_steps"
+  },
+  {
+    "name": "LZW widens its codes",
+    "file": "crates/core/src/gif.rs",
+    "find": "if next > (1 << width) && width < 12 {",
+    "replace": "if next > (2 << width) && width < 12 {",
+    "test": "lzw_round_trips_through_a_reference_decoder"
+  },
+  {
+    "name": "a reader's limit holds a scrubbed value",
+    "file": "crates/core/src/api.rs",
+    "find": "v = v.max(get(\"lo\", lo)).min(get(\"hi\", hi));",
+    "replace": "let _ = get;",
+    "test": "scrubbing_moves_by_steps_and_stays_inside_the_limit"
+  },
+  {
+    "name": "a power on a closing parenthesis is applied",
+    "file": "crates/core/src/eval.rs",
+    "find": "v.pow(self.expr_all(&c.kids[1].kids)?)",
+    "replace": "Ok(v)",
+    "test": "subscripted_names_functions_and_derivatives"
+  },
+  {
+    "name": "a symbol marks the base of its power",
+    "file": "crates/core/src/sheet.rs",
+    "find": "if want.len() == 1 {",
+    "replace": "if want.len() == 99 {",
+    "test": "a_symbol_matches_the_base_of_its_powers_but_not_of_subscripted_names"
+  },
+  {
+    "name": "Mono paints concepts in ink",
+    "file": "crates/core/src/palette.rs",
+    "find": "        View::Mono => Paint {\n            text: INK,",
+    "replace": "        View::Mono => Paint {\n            text: COLOUR[i].0,",
+    "test": "each_view_paints_the_first_four_concepts_and_no_more"
+  },
+  {
+    "name": "a fragment round trips",
+    "file": "crates/core/src/export.rs",
+    "find": "out.push((n >> (16 - 8 * i)) as u8);",
+    "replace": "out.push((n >> (16 - 8 * i)) as u8 ^ 1);",
+    "test": "a_fragment_round_trips_any_text"
+  },
+  {
+    "name": "concepts that start together open outer first",
+    "file": "crates/core/src/export.rs",
+    "find": ".then(x.1.cmp(&y.1))",
+    "replace": ".then(y.1.cmp(&x.1))",
+    "test": "concepts_that_start_together_open_outer_first"
   }
 ]

@@ -2,11 +2,15 @@
 resolver = "2"
 members = ["crates/core", "crates/shim"]
 
-# Reference default (D11). Size first; a project with a per-frame loop may
+# Reference default (D11), tightened for this project (BUILDER-SPEC.md change
+# table): opt-level z, one codegen unit, abort on panic, symbols stripped. Size first; a project with a per-frame loop may
 # change opt-level to 3 and add codegen-units = 1, recorded in BUILDER-SPEC.md.
 [profile.release]
-opt-level = "s"
+opt-level = "z"
 lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
 
 # Whole-game tests in unoptimised integer maths get slow enough to stop being
 # run. Overflow checks stay on.

@@ -31,7 +31,18 @@
 
 ## Rules agreed for this project
 
-None yet. When the person answers the opening entry's questions, add each rule that applies to every later session here, with its journal ID.
+Agreed 2026-10-28 (journal entry `2026-10-28-agreed`; reasons in the journal's opening entry).
+
+- FB-1, FB-2: parsing, layout, hit-testing, concepts, palettes, values, steps and every export encoder live in the core; the page replays the SVG and draw data the core returns.
+- FB-3: no floats in the core; values use decimal fixed point (`value.rs`), layout uses integer font units.
+- FB-4: the formula source holds no styling; augments live in the sheet.
+- FB-5, FB-6: every concept carries a pattern and a number in every view; `crates/core/tests/colour.rs` holds the colour distances.
+- FB-7: at most four concept colours; later concepts get pattern and number only.
+- FB-8, FB-9, FB-10: exports come from the core; no off-origin request; no browser storage; the embed carries its document in the address fragment.
+- FB-11: the build fails when the gzipped site passes the size budget in `scripts/build.sh`.
+- FB-12: 2D images are TikZ.
+- FB-14: cite Head, Xie and Hearst (CHI '22, doi:10.1145/3491102.3501932) in the README and the about panel; copy none of its figures.
+- Publishing to `sgilson7/formula-builder` is granted (DECISIONS.md, 2026-10-28).
 
 ## Stopping
 

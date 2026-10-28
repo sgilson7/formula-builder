@@ -30,6 +30,7 @@ Where the design journal is, its link if it is published, and its newest entry.
 
 Every `SECOND-ORDER.md` row with status *person*, by number, with what the person has to decide or supply. `scripts/notebook_check.py` fails while one is missing.
 
+- R1.14: read the five examples and the strings in `data/strings.json`; send formulas from your own courses (FB-Q2).
 - R1.5: answer the journal's questions FB-Q1 to FB-Q9 (name, scope, renderer, storage, palette, autonomy). Until then the brief's Done means and Autonomy are proposals.
 
 ## Mistakes so far

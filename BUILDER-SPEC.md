@@ -64,4 +64,5 @@ These stay with the person and go in `BRIEF.md` or `PLAN.md`:
 
 | Default | Changed to | Reason | Recorded in |
 | --- | --- | --- | --- |
-| | | | |
+| D11 | opt-level z, codegen-units 1, panic abort, strip | first visit under 250 KB gzipped (FB-11) | SECOND-ORDER R1.12 |
+| D1 | unchanged; a math font table is compiled in with `include_str!` | layout in the core (FB-Q5) without fetching a font | PLAN.md 1 |

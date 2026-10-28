@@ -1,36 +1,64 @@
-# A Builder tool
+# Formula Builder
 
-Replace this file with your tool's README once `BRIEF.md` is written. `crates/core/tests/copy.rs` reads it against `TONE.md`.
+A formula editor for teaching material. Type a formula in LaTeX, mark the concepts in it, and give each concept the augmentations that Head, Xie and Hearst catalogued in *Math Augmentation*: a colour with a pattern and a number, labels, braces, borders, tints, pointers, extra space, values a reader can drag or type, sliders, a plot whose marks follow the formula, and steps that play a derivation one move at a time. Export the result as a PNG, an SVG, a GIF of the steps, LaTeX, or an embed for another web page.
 
-This directory is a copy of the Builder template. Its rules are in `BUILDER-SPEC.md`, a coding agent's instructions are in `CLAUDE.md` and `AGENTS.md`, the meaning of each term is in `GLOSSARY.md`, and the rules for every string are in `TONE.md`.
+**Use it:** <https://sgilson7.github.io/formula-builder/>
 
-## Build, test and serve
+Everything runs in your browser tab. Nothing is uploaded, and the page keeps nothing between visits: save a document as a file, or keep its link, which carries the whole document after the `#`.
 
-```bash
-./scripts/setup.sh              # once: Python venv with Playwright and three browsers
-cargo test --workspace          # the core, boundary, copy and storage tests, in seconds
-./scripts/build.sh              # release WebAssembly build into dist/
-python3 scripts/serve.py        # http://127.0.0.1:8000/
-./scripts/check.sh              # everything, before publishing
-python3 scripts/break_tests.py  # each row of tests/breaks.json must make its test fail
-./scripts/count-tests.sh        # the test count to quote in a document
-./scripts/publish.sh            # stage 8: push dist/ to gh-pages, from a clean tree
-python3 tools/journal/new_journal.py  # once: start the design journal beside this folder
+## Colour-vision views
+
+Colour is the paper's most common augmentation, so every concept also carries an underline pattern (solid, dashed, dotted, wave, double) and a number, in every view and every export.
+
+| View | What it shows |
+| --- | --- |
+| Colour | four concept colours, each with at least 4.5:1 contrast on the canvas |
+| Deutan | blue and orange only, as text or as a tint, the one hue axis a deuteranope keeps |
+| Mono | ink only; each concept's name sits beside its number |
+| Deutan preview | the Colour view as a deuteranope would see it, for checking |
+
+`crates/core/tests/colour.rs` measures the palettes under a deuteranopia simulation (Machado et al. 2009) and in contrast ratio. A fifth concept gets a pattern and a number but no colour of its own: the paper's authors spoke of a "budget" of colour.
+
+## The augment sheet
+
+The formula holds no styling. The sheet beside it does, so the LaTeX stays readable (the paper's recommendation R6):
+
+```text
+concept slope: m
+  say how far y rises for one step to the right in x
+  label above
+  scrub -3 .. 3 step 0.5 = 1.5
+  limit -2 .. 2
+concept intercept: b
+  brace below
+  slider -4 .. 4 step 0.5 = 1
+plot y over x from -5 to 5
+  mark slope rise x = 1
+  mark intercept intercept
+step Start
+  focus slope
 ```
 
-Needs Rust (pinned in `rust-toolchain.toml`), `wasm-bindgen-cli` 0.2.127, and Python 3. Rendering art needs `pdflatex` and `pdftocairo`; the check does not.
+A concept's pattern is LaTeX matched against every formula; it can be one symbol (`m`, `\alpha`, `w_k`) or a run of terms (`\nabla f(w_k)`). Click part of a formula in the reader view to select it, click again to select a larger part, and add it as a concept. The full list of sheet commands is under "Sheet reference" in the editor.
 
-## Layout
+## Embedding
 
-| Path | Holds |
-| --- | --- |
-| `crates/core` | every application rule; no input or output; `api.rs` is the door: `start`, and `act(name, value)` |
-| `crates/shim` | the `wasm-bindgen` functions the page calls; each is one call into the core |
-| `web/` | the static page: a generic renderer for the core's view model |
-| `data/` | reader-visible text, presentation numbers, shaders |
-| `GLOSSARY.md`, `TONE.md` | what each term means; how every string is written |
-| `tools/art/`, `styles/default/` | the art pipeline and its fallback style pack |
-| `tools/journal/` | the design journal's page, its entry kinds, and the script that starts it in `../<this folder>-journal/` |
-| `tests/browser/` | the browser check and this tool's interactions |
-| `tests/breaks.json` | one deliberate break per rule, for `scripts/break_tests.py` |
-| `scripts/` | build, check, serve, publish, import audit, mutation audit, test count |
+**Embed code** gives an `<iframe>` pointing at `embed.html` with the document in the fragment. The embedded copy keeps hovering, dragging, sliders, the plot and the steps, and sends nothing to any server.
+
+## How it is built
+
+Formula Builder follows [Builder](https://github.com/sgilson7/builder-setting). Every rule lives in a Rust core with no input, output, floats or clocks: the LaTeX parser, a TeX-style layout in integer font units, the concepts and their palettes, decimal fixed-point values, the plot, the step morphs, and the PNG/SVG/GIF/LaTeX/embed encoders. A WebAssembly shim passes values through, and the page draws the SVG the core returns. `./scripts/check.sh` runs the core tests, the boundary tests, the release build with a size budget (250 KB gzipped for a first visit) and a browser check in Chromium, Firefox and WebKit.
+
+The math font is STIX Two Math (SIL Open Font License 1.1), converted once into integer metrics and outlines by `tools/font/extract.py`.
+
+## Citation
+
+The design follows the inventory and recommendations of:
+
+> Andrew Head, Amber Xie, and Marti A. Hearst. 2022. Math Augmentation: How Authors Enhance the Readability of Formulas using Novel Visual Design Practices. In *CHI Conference on Human Factors in Computing Systems (CHI '22)*. ACM. <https://doi.org/10.1145/3491102.3501932>
+
+No figure from the paper is reproduced here.
+
+## Licence
+
+Code: MIT, see `LICENSE`. Font: SIL Open Font License 1.1, see `tools/font/OFL.txt` and `LICENSES.md`.

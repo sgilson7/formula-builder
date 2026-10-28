@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The embed: the reader view alone, for an iframe on another site. The
+       formula arrives in the address fragment, which is never sent to a
+       server. Same policy as index.html. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Formula Builder</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-ready="false" data-mode="embed" class="embed-page">
+  <main class="panel reader">
+    <h1 id="title" class="sr"></h1>
+    <div id="formula" class="formula" aria-live="polite"></div>
+    <p id="prose-out" class="prose-out"></p>
+    <div id="controls" class="controls"></div>
+    <div id="plot" class="plot"></div>
+    <p id="plot-error" class="plot-error" hidden></p>
+    <div id="stepbar" class="stepbar" hidden>
+      <button id="play" type="button" class="primary"></button>
+      <button id="prev" type="button" data-s="prev"></button>
+      <ol id="steps"></ol>
+      <button id="next" type="button" data-s="next"></button>
+    </div>
+    <div class="embed-foot"><div id="views" class="seg"></div><a id="open-full" target="_blank" rel="noopener" data-s="embed_open"></a></div>
+    <div id="errors" class="errors" hidden><strong data-s="errors"></strong><ul></ul></div>
+  </main>
+  <p id="message" role="status"></p>
+  <noscript><p>This page needs JavaScript and WebAssembly.</p></noscript>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

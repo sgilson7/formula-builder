@@ -1,22 +1,50 @@
-//! The placeholder rule: the page's text comes from `data/strings.json`, and
-//! the core decides whether that file is usable before the page draws it.
-//! Replace this module with your tool's rules.
+//! The page's words. Every string a reader sees lives in `data/strings.json`;
+//! the core checks that the file has every key the screen needs before the
+//! page draws anything.
 
-use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
-/// The reader-visible strings the page needs. They live in data, not source.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct Strings {
-    pub title: String,
-    pub intro: String,
-}
+pub type Strings = BTreeMap<String, String>;
 
-/// Why a strings file cannot be used.
+/// Keys the screen cannot be drawn without.
+pub const REQUIRED: &[&str] = &[
+    "title",
+    "intro",
+    "formulas",
+    "sheet",
+    "prose",
+    "concepts",
+    "budget",
+    "add_concept",
+    "no_selection",
+    "steps",
+    "play",
+    "pause",
+    "view_colour",
+    "view_deutan",
+    "view_mono",
+    "feature_label",
+    "feature_brace",
+    "feature_border",
+    "feature_tint",
+    "feature_pointer",
+    "feature_scrub",
+    "feature_slider",
+    "feature_space",
+    "view_preview",
+    "show",
+    "hide",
+    "export_clear",
+    "remove",
+    "limit_from",
+    "export_header",
+    "embed_title",
+];
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StringsError {
     NotJson(String),
-    Empty(&'static str),
+    Empty(String),
 }
 
 impl StringsError {
@@ -24,9 +52,7 @@ impl StringsError {
     /// beside the rule.
     pub fn message(&self) -> String {
         match self {
-            StringsError::NotJson(detail) => {
-                format!("The strings file could not be read: {detail}")
-            }
+            StringsError::NotJson(detail) => format!("The strings file could not be read: {detail}"),
             StringsError::Empty(field) => format!("The strings file has an empty \"{field}\"."),
         }
     }
@@ -36,11 +62,10 @@ impl StringsError {
 /// as empty, because the page would draw nothing.
 pub fn parse_strings(json: &str) -> Result<Strings, StringsError> {
     let strings: Strings = serde_json::from_str(json).map_err(|e| StringsError::NotJson(e.to_string()))?;
-    if strings.title.trim().is_empty() {
-        return Err(StringsError::Empty("title"));
-    }
-    if strings.intro.trim().is_empty() {
-        return Err(StringsError::Empty("intro"));
+    for key in REQUIRED {
+        if strings.get(*key).map(|v| v.trim().is_empty()).unwrap_or(true) {
+            return Err(StringsError::Empty(key.to_string()));
+        }
     }
     Ok(strings)
 }
@@ -49,32 +74,33 @@ pub fn parse_strings(json: &str) -> Result<Strings, StringsError> {
 mod tests {
     use super::*;
 
+    fn full() -> String {
+        let pairs: Vec<String> = REQUIRED.iter().map(|k| format!("\"{k}\": \"x\"")).collect();
+        format!("{{{}}}", pairs.join(","))
+    }
+
     #[test]
     fn a_complete_file_is_accepted() {
-        let s = parse_strings(r#"{"title": "T", "intro": "I"}"#).unwrap();
-        assert_eq!(s.title, "T");
-        assert_eq!(s.intro, "I");
+        let s = parse_strings(&full()).unwrap();
+        assert_eq!(s["title"], "x");
     }
 
     #[test]
-    fn an_empty_title_is_rejected_by_name() {
-        let e = parse_strings(r#"{"title": "  ", "intro": "I"}"#).unwrap_err();
-        assert_eq!(e, StringsError::Empty("title"));
-        assert_eq!(e.message(), "The strings file has an empty \"title\".");
-    }
-
-    #[test]
-    fn an_empty_intro_is_rejected_by_name() {
-        let e = parse_strings(r#"{"title": "T", "intro": ""}"#).unwrap_err();
-        assert_eq!(e, StringsError::Empty("intro"));
-    }
-
-    #[test]
-    fn an_unknown_field_is_rejected() {
-        assert!(matches!(
-            parse_strings(r#"{"title": "T", "intro": "I", "extra": "x"}"#),
-            Err(StringsError::NotJson(_))
-        ));
+    fn an_empty_or_missing_key_is_rejected_by_name() {
+        let blank = full().replace("\"title\": \"x\"", "\"title\": \"  \"");
+        assert_eq!(
+            parse_strings(&blank).unwrap_err(),
+            StringsError::Empty("title".into())
+        );
+        assert_eq!(
+            parse_strings(&blank).unwrap_err().message(),
+            "The strings file has an empty \"title\"."
+        );
+        let missing = full().replace("\"intro\": \"x\",", "");
+        assert_eq!(
+            parse_strings(&missing).unwrap_err(),
+            StringsError::Empty("intro".into())
+        );
     }
 
     #[test]

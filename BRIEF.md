@@ -14,7 +14,7 @@ A formula editor that runs in a browser tab, for people who write teaching mater
 
 ## Done means
 
-To be confirmed by the person (journal questions FB-Q1 to FB-Q9). Proposed:
+Proposed by the agent; FB-Q6 unanswered, so the default scope holds:
 
 - A LaTeX formula from the paper's examples (`y = mx + b`, the gradient-descent update, the real part of a complex number) parses, lays out and renders; a formula outside the supported subset gets an error that names the unsupported command.
 - Each of the paper's sixteen kinds of augmentation that the plan keeps can be applied, and each has a core test.
@@ -45,7 +45,7 @@ Terms from the paper go into `GLOSSARY.md` before a string uses them: *math augm
 
 ## Autonomy
 
-Not yet decided: see FB-Q8. Until the person answers, the plan is **not** approved in advance, the agent stops after `PLAN.md`, and the agent does not create a repository or publish.
+Granted 2026-10-28 (FB-Q4, FB-Q5, FB-Q1, FB-Q3), in the person's words: *"q5 latex parser and layout in rust corse q5 yes i give explicit permission to create a public repo and pages for deployment q1 Formula Builder q3 yes. now build the first version and create a tab in the design journal comparing mockups to reality, and determine any missing features from the mockup and fix them; by the end of this i want a link i can test out"*. The plan is approved in advance for this round. Where this brief is silent, the agent decides, records the decision in `SECOND-ORDER.md`, and continues; unanswered questions FB-Q2 and FB-Q6 to FB-Q10 take the defaults the journal lists. The agent may not loosen a Builder requirement or a boundary test, and may not add a server, an account, analytics or any off-origin request. The agent may create the public repository `sgilson7/formula-builder` and publish it to GitHub Pages with `./scripts/publish.sh` once `./scripts/check.sh` passes.
 
 ## Journal
 

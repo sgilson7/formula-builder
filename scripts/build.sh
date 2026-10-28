@@ -41,6 +41,8 @@ wasm-bindgen --target web --no-typescript --out-dir dist/pkg \
 cp -R web/. dist/
 cp -R data/. dist/data/
 cp GLOSSARY.md dist/data/glossary.md
+# The font table is compiled into the module; the site does not serve it.
+rm -rf dist/data/font
 
 # Cache busting. The hash covers every file, so any change gives new URLs.
 BUILD=$(find dist -type f | LC_ALL=C sort | xargs cat | sha256 | cut -c1-12)
@@ -65,3 +67,15 @@ touch dist/.nojekyll
 echo "Built dist/ (build $BUILD):"
 find dist -type f | sort
 wc -c < dist/pkg/tool_shim_bg.wasm | awk '{printf "wasm: %d KB\n", $1/1024}'
+
+# Rule FB-11: what a first visit downloads, gzipped, stays inside the budget.
+BUDGET_KB=250
+TOTAL=0
+for f in dist/index.html dist/app.js dist/style.css dist/icon.svg dist/pkg/tool_shim.js dist/pkg/tool_shim_bg.wasm dist/data/strings.json dist/data/examples.json dist/data/glossary.md; do
+  TOTAL=$((TOTAL + $(gzip -9c "$f" | wc -c)))
+done
+echo "first visit, gzipped: $((TOTAL / 1024)) KB of a $BUDGET_KB KB budget"
+if [ "$TOTAL" -gt $((BUDGET_KB * 1024)) ]; then
+  echo "the first visit is over the size budget (FB-11)" >&2
+  exit 1
+fi
