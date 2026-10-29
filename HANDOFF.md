@@ -88,6 +88,8 @@ Round 1, commit `8d4f300`: 82 tests, 12 of 12 breaks, 199 KB.
 
 2026-10-29, round 3 (T2): `./scripts/check.sh` ended `BUILDER CHECK PASSED`; `./scripts/count-tests.sh` printed `111 passed, 0 failed, 0 ignored`; `scripts/break_tests.py` caught 25 of 25; first visit 235 KB gzipped. Published from `7e4db87`; the browser check against <https://sgilson7.github.io/formula-builder> passed in all three engines (138 checks), opening all 43 examples.
 
+2026-10-29, round 4 (T3, T4): `./scripts/check.sh` ended `BUILDER CHECK PASSED`; `./scripts/count-tests.sh` printed `116 passed, 0 failed, 0 ignored`; `scripts/break_tests.py` caught 34 of 34; first visit 242 KB gzipped. Published from `73092a9`; the browser check against <https://sgilson7.github.io/formula-builder> passed in all three engines (153 checks).
+
 ## The next action
 
 Open the live page in Build mode on a Chromebook-sized window and try the path in the journal entry `2026-10-28-kids-built`; check one case by hand (speed 65, time 2 puts the point at 130 on the distance plot). Then R2.11 (the student words and shelf) and R2.2 (a session with sixth graders).
