@@ -80,7 +80,7 @@ Every `SECOND-ORDER.md` row with status *person*, by number, with what the perso
 
 ## What passed
 
-2026-10-28, round 2 (T1): `./scripts/check.sh` ended `BUILDER CHECK PASSED` (browser check in chromium, firefox, webkit); `./scripts/count-tests.sh` printed `109 passed, 0 failed, 0 ignored`; `scripts/break_tests.py` caught 22 of 22; first visit 228 KB gzipped.
+2026-10-28, round 2 (T1): `./scripts/check.sh` ended `BUILDER CHECK PASSED` (browser check in chromium, firefox, webkit); `./scripts/count-tests.sh` printed `109 passed, 0 failed, 0 ignored`; `scripts/break_tests.py` caught 22 of 22; first visit 228 KB gzipped. Published from `1feec9e`; the browser check against <https://sgilson7.github.io/formula-builder> passed in all three engines (129 checks).
 
 Round 1, commit `8d4f300`: 82 tests, 12 of 12 breaks, 199 KB.
 
