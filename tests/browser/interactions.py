@@ -22,9 +22,48 @@ EXAMPLES = json.loads((ROOT / "data" / "examples.json").read_text())
 SHELF = [e for e in EXAMPLES if e.get("group") == "shelf"]
 
 
+# The worked line's glyphs are the ones a tap cannot select; each names its
+# character by code point (#fbg34 is "4").
+WORKED = """f => [...document.querySelectorAll('#formula use:not([data-n])')]
+  .map(u => String.fromCodePoint(parseInt(u.getAttribute('href').slice(4), 16))).join('')"""
+RESTING = "() => document.querySelectorAll('#formula use[opacity]').length === 0"
+
+
+def worked(page, check):
+    """The worked line under A = l x w, and a change flowing into it (R4.1, R4.2)."""
+    # length 4, width 3: worked by hand, 4 x 3 = 12; A is the italic capital, U+1D434
+    check(page.evaluate(WORKED) == "\U0001D434=4×3=12", "the worked line reads A = 4 x 3 = 12")
+    slider = page.locator("#controls input[type=range]").first
+    slider.focus()
+    slider.press("ArrowRight")
+    page.wait_for_function(RESTING)
+    page.wait_for_function("() => document.querySelectorAll('#formula use:not([data-n])').length > 0 && (%s)() === '\U0001D434=5×3=15'" % WORKED.replace("f =>", "() =>"))
+    check(True, "one step of the length works out again as A = 5 x 3 = 15, and comes to rest")
+    slider.press("ArrowLeft")
+    page.wait_for_function(RESTING)
+
+
+def full_screen(page, check):
+    """The reader alone, filling the screen, to show a formula off (R4.3)."""
+    if not page.evaluate("() => document.fullscreenEnabled"):
+        check(not page.is_visible("#full"), "no full-screen button where the browser has no full screen")
+        return
+    page.select_option("#examples", "fourier")
+    page.wait_for_function("t => document.querySelector('#doc-title').value === t", arg="The discrete Fourier transform")
+    before = page.locator("#formula svg").bounding_box()["width"]
+    page.click("#full")
+    page.wait_for_function("() => document.fullscreenElement && document.fullscreenElement.classList.contains('reader')")
+    check(page.inner_text("#full") == STRINGS["full_screen_leave"], "full screen shows the reader alone, with a way out")
+    check(page.locator("#formula svg").bounding_box()["width"] > before, "the formula grows to fill the screen")
+    page.click("#full")
+    page.wait_for_function("() => !document.fullscreenElement")
+    check(page.inner_text("#full") == STRINGS["full_screen"], "leaving full screen brings the editor back")
+
+
 def student(page, check):
     """The Build mode a student opens to (journal page 5)."""
     check(page.inner_text("#intro p") == STRINGS["kid_intro"], "a student reads the student intro")
+    worked(page, check)
     check(page.inner_text("#message") == "", "no error message is shown")
     labels = page.eval_on_selector_all("#examples option", "os => os.map(o => o.textContent)")
     check(labels == [e["label"] for e in SHELF], "the shelf offers the sixth-grade formulas only")
@@ -110,6 +149,7 @@ def run(page, check, engine):
         if page.is_visible("#errors") or page.is_visible("#plot-error"):
             broken.append(e["id"])
     check(broken == [], "every example opens with no error and no plot error %s" % broken)
+    full_screen(page, check)
     # a long fraction of tiles scrolls in its box instead of pushing the keypad over the reader
     page.select_option("#examples", "secant")
     page.wait_for_selector("#tile-lines .tfrac")

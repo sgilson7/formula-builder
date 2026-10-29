@@ -19,6 +19,10 @@ The editor opens in **Build**, made for students with no LaTeX and no code on sc
 
 The Teacher mode's examples menu has 43 starting formulas under nine headings: the sixth-grade shelf, formulas from the documents the paper analysed (the rendering equation, the discrete Fourier transform, Bayes' theorem, the Bellman equation and more), algebra, calculus, linear algebra, discrete mathematics, probability and statistics, machine learning and physics.
 
+## Numbers that work themselves out
+
+Under each formula that defines a value, a worked line writes it again with the reader's numbers in place and its result: move the sliders of the mean and `m = (4 + 7 + 10)/3 = 7` becomes `(6 + 7 + 10)/3 ≈ 7.667`. The numbers slide and roll into their new places; with reduced motion turned on in the system settings they change at once. **Full screen** shows the reader alone, for showing a formula to a room; Esc leaves it.
+
 ## Colour-vision views
 
 Colour is the paper's most common augmentation, so every concept also carries an underline pattern (solid, dashed, dotted, wave, double) and a number, in every view and every export.

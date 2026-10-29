@@ -9,6 +9,8 @@ pub type Strings = BTreeMap<String, String>;
 /// Keys the screen cannot be drawn without.
 pub const REQUIRED: &[&str] = &[
     "title",
+    "full_screen",
+    "full_screen_leave",
     "intro",
     "formulas",
     "sheet",

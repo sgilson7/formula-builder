@@ -33,6 +33,10 @@ fn error(message: String) -> String {
 /// Ticks (the page's animation frames) a step holds, and a morph takes.
 pub const HOLD_TICKS: u32 = 90;
 pub const MORPH_TICKS: u32 = 36;
+/// Ticks a change of value takes to flow into place, and how far (in
+/// thousandths of an em) a changed digit rolls.
+pub const EASE_TICKS: u32 = 18;
+pub const ROLL: i32 = 320;
 /// GIF timing, in hundredths of a second.
 pub const GIF_HOLD: u16 = 160;
 pub const GIF_MORPH_FRAMES: i32 = 10;
@@ -57,6 +61,10 @@ pub const ROLES: [&str; 3] = ["explore", "build", "teach"];
 fn build_role() -> String {
     "build".into()
 }
+
+/// A change of value flowing into place: the overrides before it, the
+/// page's clock when it began, and ticks since.
+pub type Ease = (Vec<(String, String)>, Option<i64>, u32);
 
 /// What the page hands back on the next call. The page stores it and does
 /// not read it.
@@ -98,6 +106,13 @@ pub struct State {
     /// the letter keys are open
     #[serde(default)]
     pub letters: bool,
+    /// a change of value flowing into place: the values before it, the
+    /// page's clock when it began, and ticks since
+    #[serde(default)]
+    pub ease: Option<Ease>,
+    /// the reader asked for reduced motion: changes land at once
+    #[serde(default)]
+    pub calm: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -273,6 +288,8 @@ pub struct Ui {
     pub controls: Vec<ControlUi>,
     pub steps: Vec<Choice>,
     pub playing: bool,
+    /// a change of value is flowing into place; the page sends ticks until it ends
+    pub easing: bool,
     pub export_clear: bool,
     pub selection: String,
     pub out: Option<Out>,
@@ -435,13 +452,32 @@ fn formula_view(state: &State, m: &Model) -> String {
             };
             let vb = m.values(&values_of(&state.overrides), Some(next));
             let b = scene(m, &vb, &lb, &m.shown(Some(next)));
-            let mid = morph(&a, &b, t, m);
+            let mid = morph(&a, &b, t, m, 0);
             return svg(m, &mid, &still);
         }
         return svg(m, &a, &still);
     }
     let sc = scene(m, &values, &lk, &m.shown(lk.step));
+    if let Some((from, _, tick)) = &state.ease {
+        // the old numbers slide and roll into the new ones; the decorations
+        // are the new picture's, so nothing flickers while a slider moves
+        let before = m.values(&values_of(from), lk.step);
+        let a = scene(m, &before, &lk, &m.shown(lk.step));
+        let t = (*tick).min(EASE_TICKS) as i32 * 1000 / EASE_TICKS as i32;
+        let mut mid = morph(&a, &sc, ease_out(t), m, ROLL);
+        mid.under = sc.under;
+        mid.over = sc.over;
+        mid.hits = sc.hits;
+        mid.alt = sc.alt;
+        return svg(m, &mid, &lk);
+    }
     svg(m, &sc, &lk)
+}
+
+/// Fast at first, gentle at the end: 1 - (1 - t)^2, in thousandths.
+fn ease_out(t: i32) -> i32 {
+    let r = 1000 - t;
+    1000 - r * r / 1000
 }
 
 fn features(state: &State, m: &Model, ci: usize) -> Vec<Choice> {
@@ -1154,6 +1190,7 @@ fn ui(state: State, hints: Vec<Hint>, out: Option<Out>) -> Ui {
         controls: controls(&state, &m, &values),
         steps,
         playing: state.playing,
+        easing: state.ease.is_some() && !state.playing,
         export_clear: state.export_clear,
         selection,
         out,
@@ -1209,6 +1246,8 @@ pub fn start(strings_json: &str, examples_json: &str, glossary_md: &str, mode: &
             code: false,
             tiles: None,
             letters: false,
+            ease: None,
+            calm: false,
             site: strings.get("site").cloned().unwrap_or_default(),
             strings,
             doc: first.doc.clone(),
@@ -1360,7 +1399,7 @@ fn gif_frames(state: &State, m: &Model) -> Out {
         });
         if i + 1 < scenes.len() {
             for f in 1..GIF_MORPH_FRAMES {
-                let mid = morph(sc, &scenes[i + 1], f * 1000 / GIF_MORPH_FRAMES, m);
+                let mid = morph(sc, &scenes[i + 1], f * 1000 / GIF_MORPH_FRAMES, m, 0);
                 frames.push(Frame {
                     svg: svg(m, &padded(mid, w, h), &lk),
                     delay: GIF_MORPH_DELAY,
@@ -1459,6 +1498,8 @@ pub fn act(state_json: &str, glossary_md: &str, name: &str, value: &str) -> Stri
         let hints = hints_from(glossary_md)?;
         let m = Model::build(&state.doc);
         let mut out = None;
+        let (doc_before, step_before, values_before) =
+            (state.doc.clone(), state.step, state.overrides.clone());
         let num_to_index = |v: &str| {
             v.trim()
                 .parse::<usize>()
@@ -2083,6 +2124,17 @@ pub fn act(state_json: &str, glossary_md: &str, name: &str, value: &str) -> Stri
                 }
             }
             "tick" => {
+                let now = value.split('.').next().and_then(|v| v.parse::<i64>().ok());
+                if let Some((_, t0, tick)) = state.ease.as_mut() {
+                    match (now, *t0) {
+                        (Some(now), Some(t0)) => *tick = (*tick).max(((now - t0).max(0) * 60 / 1000) as u32),
+                        (Some(now), None) => *t0 = Some(now),
+                        (None, _) => *tick += 1,
+                    }
+                    if *tick >= EASE_TICKS {
+                        state.ease = None;
+                    }
+                }
                 // the page sends its clock; ticks are sixtieths of a second
                 // since play started, so a slow frame rate keeps the timing
                 if state.playing {
@@ -2104,6 +2156,7 @@ pub fn act(state_json: &str, glossary_md: &str, name: &str, value: &str) -> Stri
                     }
                 }
             }
+            "motion.calm" => state.calm = value == "1",
             "export.size" => {
                 state.export_px = value
                     .parse::<i32>()
@@ -2141,7 +2194,7 @@ pub fn act(state_json: &str, glossary_md: &str, name: &str, value: &str) -> Stri
                 let height =
                     (h * 640 / w.max(1)).clamp(160, 900) + if m.sheet.plot.is_some() { 380 } else { 0 } + 140;
                 let t = format!(
-                    r#"<iframe src="{}embed.html{}" width="680" height="{height}" title="{}" style="border:0;max-width:100%" loading="lazy"></iframe>"#,
+                    r#"<iframe src="{}embed.html{}" width="680" height="{height}" title="{}" style="border:0;max-width:100%" loading="lazy" allow="fullscreen"></iframe>"#,
                     state.site,
                     export::fragment(&state.doc),
                     crate::render::esc(&fill(
@@ -2176,6 +2229,11 @@ pub fn act(state_json: &str, glossary_md: &str, name: &str, value: &str) -> Stri
             }
             other => return Err(format!("Unknown action \"{other}\".")),
         }
+        if state.doc != doc_before || state.step != step_before || state.playing || state.calm {
+            state.ease = None;
+        } else if state.overrides != values_before {
+            state.ease = Some((values_before, None, 0));
+        }
         Ok(ui(state, hints, out))
     };
     match run() {
@@ -2196,6 +2254,7 @@ fn reset(state: &mut State) {
     state.tick = 0;
     state.play_t0 = None;
     state.muted.clear();
+    state.ease = None;
 }
 
 /// Turns the GIF frames the page rasterised into a GIF file: `rgba` holds
@@ -2332,6 +2391,10 @@ mod tests {
         assert!(
             code.starts_with("<iframe src=\"https://example.org/fb/embed.html#f="),
             "{code}"
+        );
+        assert!(
+            code.contains(r#"allow="fullscreen""#),
+            "an embedded reader may go full screen"
         );
         let gif = step(&v, "export.gif", "");
         assert_eq!(
@@ -2633,6 +2696,54 @@ mod tests {
         }
         // the shelf, the paper's sources, and seven fields
         assert_eq!(heads.len(), 9);
+    }
+
+    #[test]
+    fn a_change_of_value_flows_into_place_and_comes_to_rest() {
+        // y = 2 b, b's slider at 1: worked out as y = 2 x 1 = 2, then 2 x 3 = 6
+        let doc = step(&begin(), "doc.formulas", "y = 2 b");
+        assert_eq!(doc["ok"]["easing"], false);
+        let v = step(&doc, "value.set", "b|3");
+        assert_eq!(v["ok"]["easing"], true, "a change starts flowing");
+        let first = v["ok"]["formula_svg"].as_str().unwrap().to_string();
+        // the page's clock: 0 ms starts it, 100 ms is part way (6 of 18 ticks)
+        let v = step(&step(&v, "tick", "0"), "tick", "100");
+        assert_eq!(v["ok"]["easing"], true);
+        let mid = v["ok"]["formula_svg"].as_str().unwrap().to_string();
+        assert!(
+            mid.contains(" opacity=\""),
+            "part way, the old and new digits are both fading"
+        );
+        assert_ne!(mid, first);
+        let v = step(&v, "tick", "300");
+        assert_eq!(v["ok"]["easing"], false, "18 ticks is 300 ms");
+        let rest = v["ok"]["formula_svg"].as_str().unwrap().to_string();
+        // y = 2 x 3 = 6 is seven glyphs, none of which a tap selects
+        let untappable = rest
+            .split("<use ")
+            .skip(1)
+            .filter(|u| !u.split("/>").next().unwrap().contains("data-n"))
+            .count();
+        assert_eq!(untappable, 7, "the worked line's glyphs carry no node");
+        let calm = step(
+            &step(&step(&doc, "motion.calm", "1"), "value.set", "b|3"),
+            "tick",
+            "0",
+        );
+        assert_eq!(
+            calm["ok"]["easing"], false,
+            "reduced motion lands a change at once"
+        );
+        assert_eq!(
+            rest,
+            calm["ok"]["formula_svg"].as_str().unwrap(),
+            "at rest, the picture is the new values'"
+        );
+        let other = step(&step(&doc, "value.set", "b|3"), "doc.formulas", "y = 3 b");
+        assert_eq!(
+            other["ok"]["easing"], false,
+            "a new formula does not flow from the old picture"
+        );
     }
 
     #[test]

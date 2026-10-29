@@ -173,5 +173,68 @@
     "find": "0x210E | 0x2113 | 0x1D434",
     "replace": "0x210E | 0x1D434",
     "test": "the_new_examples_compute_values_worked_out_by_hand"
+  },
+  {
+    "name": "letters side by side get no times sign",
+    "file": "crates/core/src/worked.rs",
+    "find": "                if touching && replaced {",
+    "replace": "                if false && touching && replaced {",
+    "test": "letters_side_by_side_get_a_times_sign_and_a_negative_number_brackets"
+  },
+  {
+    "name": "a negative number goes in without brackets",
+    "file": "crates/core/src/worked.rs",
+    "find": "    if v < Fx::ZERO {",
+    "replace": "    if false {",
+    "test": "letters_side_by_side_get_a_times_sign_and_a_negative_number_brackets"
+  },
+  {
+    "name": "a rounded result is written with =",
+    "file": "crates/core/src/worked.rs",
+    "find": "    source += if exact { \" = \" } else { \" \\\\approx \" };",
+    "replace": "    source += \" = \";",
+    "test": "the_mean_works_out_with_the_reader_numbers_in_place"
+  },
+  {
+    "name": "a name defined by another formula stays a letter",
+    "file": "crates/core/src/worked.rs",
+    "find": "            None if name != self.own && self.scope.defs.iter().any(|(n, _)| n == name) => {",
+    "replace": "            None if false => {",
+    "test": "a_name_defined_by_another_formula_goes_in_as_its_value"
+  },
+  {
+    "name": "a worked line is drawn for a formula with a letter that has no value",
+    "file": "crates/core/src/worked.rs",
+    "find": "    let result = scope.value_of(&own, &[]).ok()?;",
+    "replace": "    let result = scope.value_of(&own, &[]).unwrap_or(Fx::ZERO);",
+    "test": "no_worked_line_without_a_value_for_every_name_or_for_a_function"
+  },
+  {
+    "name": "a change of value lands at once",
+    "file": "crates/core/src/api.rs",
+    "find": "            state.ease = Some((values_before, None, 0));",
+    "replace": "            state.ease = None;",
+    "test": "a_change_of_value_flows_into_place_and_comes_to_rest"
+  },
+  {
+    "name": "reduced motion is ignored",
+    "file": "crates/core/src/api.rs",
+    "find": "state.playing || state.calm {",
+    "replace": "state.playing {",
+    "test": "a_change_of_value_flows_into_place_and_comes_to_rest"
+  },
+  {
+    "name": "the worked line can be tapped as the formula",
+    "file": "crates/core/src/render.rs",
+    "find": "            if !d.worked {",
+    "replace": "            if true {",
+    "test": "a_change_of_value_flows_into_place_and_comes_to_rest"
+  },
+  {
+    "name": "the embed code cannot go full screen",
+    "file": "crates/core/src/api.rs",
+    "find": " loading=\"lazy\" allow=\"fullscreen\"></iframe>",
+    "replace": " loading=\"lazy\"></iframe>",
+    "test": "exports_arrive_once_and_carry_the_document"
   }
 ]

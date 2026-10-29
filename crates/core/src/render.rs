@@ -88,6 +88,8 @@ pub struct Drawn {
     pub formula: usize,
     pub node: usize,
     pub opacity: i32,
+    /// a glyph of a worked line, which a tap does not select
+    pub worked: bool,
 }
 
 #[derive(Debug, Default)]
@@ -239,6 +241,92 @@ pub fn value_text(v: Fx, step: Fx) -> String {
     v.format(step.digits_needed(6).max(v.digits_needed(6)))
 }
 
+/// Draws a worked line with its top at `y`: each number in its concept's
+/// colour with the concept's line under it, so Mono still tells them apart.
+/// Returns where the next row starts, and the line's width.
+#[allow(clippy::too_many_arguments)]
+fn worked_line(
+    sc: &mut Scene,
+    w: &crate::worked::Worked,
+    m: &Model,
+    look: &Look,
+    fi: usize,
+    focus: &[usize],
+    hide: &[usize],
+    y: i32,
+) -> (i32, i32) {
+    let laid = layout(&w.root, &[]);
+    let base = y + laid.h;
+    let bx = MARGIN;
+    let shown = |c: Option<usize>| c.filter(|c| !look.muted.contains(c));
+    for it in &laid.items {
+        let ci = shown(w.concept_of(it.node));
+        let mut fill = ci
+            .map(|c| paint(look.view, &m.sheet.concepts[c]).text)
+            .unwrap_or(INK);
+        if !focus.is_empty() && !ci.map(|c| focus.contains(&c)).unwrap_or(false) {
+            fill = DIM;
+        }
+        let opacity = if ci.map(|c| hide.contains(&c)).unwrap_or(false) {
+            0
+        } else {
+            1000
+        };
+        let (key, x, gy, scale, rw, rh) = match &it.it {
+            It::Glyph { key, x, y: gy, scale } => (key.clone(), bx + x, base - gy, *scale, 0, 0),
+            It::Rule { x, y: ry, w, h } => (String::new(), bx + x, base - ry - h, 0, *w, *h),
+            It::Brace { .. } => continue,
+        };
+        sc.drawn.push(Drawn {
+            key,
+            x,
+            y: gy,
+            scale,
+            w: rw,
+            h: rh,
+            fill,
+            concept: ci,
+            formula: fi,
+            node: it.node,
+            opacity,
+            worked: true,
+        });
+    }
+    let mut bottom = base + laid.d;
+    for (a, b, c) in &w.marks {
+        let Some(c) = shown(*c) else { continue };
+        if hide.contains(&c) {
+            continue;
+        }
+        let xs: Vec<(i32, i32, i32)> = laid
+            .items
+            .iter()
+            .filter(|it| {
+                w.root
+                    .find(it.node)
+                    .map(|n| *a <= n.span.0 && n.span.1 <= *b)
+                    .unwrap_or(false)
+            })
+            .filter_map(|it| laid.find(it.node).map(|bx| (bx.x, bx.x + bx.w, bx.d - bx.y)))
+            .collect();
+        let (Some(x0), Some(x1)) = (xs.iter().map(|p| p.0).min(), xs.iter().map(|p| p.1).max()) else {
+            continue;
+        };
+        let concept = &m.sheet.concepts[c];
+        // just under the number itself, so one in a numerator is not underlined below the bar
+        let uy = base + xs.iter().map(|p| p.2).max().unwrap_or(0) + 95;
+        sc.over += &underline(
+            concept.pattern,
+            bx + x0 + 15,
+            bx + x1 - 15,
+            uy,
+            paint(look.view, concept).text,
+        );
+        bottom = bottom.max(uy + 60);
+    }
+    (bottom + ROW_GAP, laid.w)
+}
+
 /// Lays out the shown formulas with every decoration.
 pub fn scene(m: &Model, values: &[(String, Fx)], look: &Look, shown: &[usize]) -> Scene {
     let mut sc = Scene::default();
@@ -333,6 +421,7 @@ pub fn scene(m: &Model, values: &[(String, Fx)], look: &Look, shown: &[usize]) -
                     formula: fi,
                     node: it.node,
                     opacity,
+                    worked: false,
                 }),
                 It::Rule { x, y: ry, w, h } => sc.drawn.push(Drawn {
                     key: String::new(),
@@ -346,6 +435,7 @@ pub fn scene(m: &Model, values: &[(String, Fx)], look: &Look, shown: &[usize]) -
                     formula: fi,
                     node: it.node,
                     opacity,
+                    worked: false,
                 }),
                 It::Brace {
                     x, y: by, w, below, ..
@@ -626,6 +716,11 @@ pub fn scene(m: &Model, values: &[(String, Fx)], look: &Look, shown: &[usize]) -
             }
         }
         y = bottom + ROW_GAP;
+        if let Some(w) = crate::worked::worked(m, fi, values) {
+            let (next, w) = worked_line(&mut sc, &w, m, look, fi, &focus, &hide, y);
+            y = next;
+            width = width.max(w);
+        }
     }
     // the legend: each concept's number, pattern and name, so a printout or a
     // Mono copy explains itself
@@ -787,7 +882,9 @@ fn draw_list<'a>(drawn: impl Iterator<Item = &'a Drawn>, interactive: bool, m: &
         };
         let mut attrs = String::new();
         if interactive {
-            attrs += &format!(r#" data-n="{}:{}""#, d.formula, d.node);
+            if !d.worked {
+                attrs += &format!(r#" data-n="{}:{}""#, d.formula, d.node);
+            }
             if let Some(c) = d.concept {
                 attrs += &format!(r#" data-c="{}""#, m.sheet.concepts[c].num);
             }
@@ -840,9 +937,11 @@ pub fn svg(m: &Model, sc: &Scene, look: &Look) -> String {
     )
 }
 
-/// One frame between two steps: glyphs that persist slide, the rest fade.
+/// One frame between two pictures: glyphs that persist slide, the rest fade.
+/// With `roll`, a glyph that leaves rises by that much as it fades and its
+/// replacement rises into place from below, as a changed digit does.
 /// `t` runs from 0 to 1000.
-pub fn morph(a: &Scene, b: &Scene, t: i32, m: &Model) -> Scene {
+pub fn morph(a: &Scene, b: &Scene, t: i32, m: &Model, roll: i32) -> Scene {
     let ident = |s: &Scene| {
         let mut seen: Vec<(Option<usize>, String, usize)> = Vec::new();
         s.drawn
@@ -881,6 +980,7 @@ pub fn morph(a: &Scene, b: &Scene, t: i32, m: &Model) -> Scene {
             }
             None => out.drawn.push(Drawn {
                 opacity: d.opacity * (1000 - t) / 1000,
+                y: d.y - roll * t / 1000,
                 ..d.clone()
             }),
         }
@@ -889,6 +989,7 @@ pub fn morph(a: &Scene, b: &Scene, t: i32, m: &Model) -> Scene {
         if !ia.contains(&ib[j]) {
             out.drawn.push(Drawn {
                 opacity: e.opacity * t / 1000,
+                y: e.y + roll * (1000 - t) / 1000,
                 ..e.clone()
             });
         }

@@ -355,7 +355,7 @@ impl Ctx<'_, '_> {
 
 /// Letters, Greek and double-struck letters name values, and so does the
 /// script ℓ the shelf writes for a length; other symbols do not.
-fn is_name(cp: u32) -> bool {
+pub(crate) fn is_name(cp: u32) -> bool {
     matches!(cp, 0x41..=0x5A | 0x61..=0x7A | 0x210E | 0x2113 | 0x1D434..=0x1D467 | 0x1D6E2..=0x1D71B | 0x391..=0x3C9 | 0x221E)
 }
 

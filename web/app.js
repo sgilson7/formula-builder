@@ -520,14 +520,16 @@ function draw(result) {
     el("open-full").href = "./" + ui.fragment;
   }
   if (ui.out) deliver(ui.out);
-  if (ui.playing && !looping) {
+  // playback and a change of value both move on the page's clock
+  el("full").textContent = ui.strings[document.fullscreenElement ? "full_screen_leave" : "full_screen"];
+  if ((ui.playing || ui.easing) && !looping) {
     looping = true;
     requestAnimationFrame(tick);
   }
 }
 
 function tick(now) {
-  if (!ui.playing) {
+  if (!ui.playing && !ui.easing) {
     looping = false;
     return;
   }
@@ -713,6 +715,25 @@ function wireEditor() {
   el("close").addEventListener("click", () => el("copy-dialog").close());
 }
 
+// Full screen shows the reader alone, to show a formula off; Esc leaves it.
+// Browsers without element full screen (iPhone Safari) get no button.
+function wireFull() {
+  const full = el("full");
+  if (!full) return;
+  full.hidden = !document.fullscreenEnabled;
+  // WebKit does not always send fullscreenchange, so the label also follows the request
+  const label = () => {
+    full.textContent = ui.strings[document.fullscreenElement ? "full_screen_leave" : "full_screen"];
+  };
+  full.addEventListener("click", () => {
+    const going = document.fullscreenElement
+      ? document.exitFullscreen()
+      : document.querySelector(".reader").requestFullscreen();
+    going.then(label, label);
+  });
+  document.addEventListener("fullscreenchange", label);
+}
+
 async function main() {
   await init();
   const strings = await (await fetch("data/strings.json")).text();
@@ -723,7 +744,12 @@ async function main() {
   const opened = location.hash;
   draw(JSON.parse(start(strings, examples, glossary, mode)));
   if (opened) send("doc.fragment", opened);
+  // a reader who asks for reduced motion sees changes land at once
+  const calm = matchMedia("(prefers-reduced-motion: reduce)");
+  if (calm.matches) send("motion.calm", "1");
+  calm.addEventListener("change", () => send("motion.calm", calm.matches ? "1" : ""));
   wireReader();
+  wireFull();
   if (mode === "edit") wireEditor();
   document.body.dataset.ready = "true";
 }

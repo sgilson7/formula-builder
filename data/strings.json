@@ -26,6 +26,8 @@
   "prose": "Prose",
   "prose_help": "Link words to a concept with [words](concept).",
   "reader": "Reader view",
+  "full_screen": "Full screen",
+  "full_screen_leave": "Leave full screen",
   "concepts": "Concepts",
   "budget": "{used} of {max} colours",
   "budget_note": "A concept past the colour budget gets a pattern and a number, and no colour of its own.",
