@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Reference default. connect-src 'self' keeps fetches on this origin;
+       'wasm-unsafe-eval' lets the page compile its own WebAssembly module;
+       form-action 'none' blocks form posts. A meta policy cannot stop data
+       leaving by navigation, so the browser check still watches requests. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Formula Builder</title>
+  <link rel="stylesheet" href="style.css?v=2c01478664d5">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+</head>
+<body data-ready="false" data-mode="edit">
+  <!-- Each element with data-panel shows only in the modes whose `shows`
+       list (from the core) names it. -->
+  <header class="bar">
+    <div class="brand"><span class="logo" aria-hidden="true">Σ</span><h1 id="title"></h1></div>
+    <div class="group" role="group" aria-labelledby="roles-label" data-panel="roles"><span id="roles-label" class="small" data-s="roles"></span><div id="roles" class="seg"></div></div>
+    <label class="small check switch" data-panel="teach"><input id="code" type="checkbox"> <span data-s="show_code"></span></label>
+    <div class="group" role="group" aria-labelledby="view-label"><span id="view-label" class="small" data-s="view"></span><div id="views" class="seg"></div></div>
+    <div class="group" data-panel="file">
+      <label class="small" for="examples" data-s="examples"></label>
+      <select id="examples"></select>
+      <button id="new" type="button" data-s="new"></button>
+      <label class="button file"><span data-s="open"></span><input id="open" type="file" accept=".json,application/json"></label>
+      <button id="save" type="button" data-s="save"></button>
+    </div>
+    <div class="group exports" data-panel="exports">
+      <span class="small" data-s="export"></span>
+      <button type="button" class="primary" data-export="png" data-s="export_png"></button>
+      <button type="button" class="primary" data-export="svg" data-s="export_svg" data-panel="exports-all"></button>
+      <button type="button" class="primary" data-export="gif" data-s="export_gif"></button>
+      <button type="button" class="primary" data-export="latex" data-s="export_latex" data-panel="exports-all"></button>
+      <button type="button" class="embed" data-export="embed" data-s="export_embed" data-panel="exports-all"></button>
+      <button type="button" data-export="link" data-s="export_link"></button>
+      <button type="button" data-export="link" data-value="explore" data-s="export_link_explore" data-panel="exports-all"></button>
+      <button type="button" data-export="link" data-value="build" data-s="export_link_build" data-panel="exports-all"></button>
+      <span class="group" data-panel="exports-all">
+        <label class="small" for="size" data-s="export_size"></label>
+        <select id="size"><option value="600">600 px</option><option value="1200" selected>1200 px</option><option value="2400">2400 px</option></select>
+        <label class="small check"><input id="clear" type="checkbox"> <span data-s="export_clear"></span></label>
+      </span>
+    </div>
+  </header>
+  <div id="intro" class="intro"><p></p><p class="privacy" data-s="privacy"></p></div>
+  <main class="layout">
+    <section class="panel editor" aria-labelledby="h-tiles" data-panel="file">
+      <label class="field"><span class="head" data-s="doc_title"></span><input id="doc-title" type="text" spellcheck="false"></label>
+
+      <div class="tiles" data-panel="tiles">
+        <h2 id="h-tiles" class="head" data-s="tiles_head"></h2>
+        <p class="help" data-s="tiles_help"></p>
+        <div id="tile-lines" class="tile-lines" tabindex="0"></div>
+        <div id="keys" class="keys"></div>
+        <div class="row"><button id="add-line" type="button" data-s="add_line"></button><button id="remove-line" type="button" data-s="remove_line"></button></div>
+      </div>
+
+      <label class="field" data-panel="sentence"><span class="head" data-s="sentence_head"></span><span class="help" data-s="sentence_help"></span>
+        <textarea id="sentence" rows="3"></textarea></label>
+
+      <div class="code-pane" data-panel="code">
+        <label class="field"><span class="head" id="h-formulas" data-s="formulas"></span><span class="help" data-s="formulas_help"></span>
+          <textarea id="formulas" rows="4" spellcheck="false" class="code"></textarea></label>
+        <label class="field"><span class="head" data-s="sheet"></span><span class="help" data-s="sheet_help"></span>
+          <textarea id="sheet" rows="16" spellcheck="false" class="code"></textarea></label>
+        <details class="help ref"><summary data-s="reference"></summary><p class="code-ref" data-s="sheet_reference"></p></details>
+        <label class="field"><span class="head" data-s="prose"></span><span class="help" data-s="prose_help"></span>
+          <textarea id="prose" rows="4"></textarea></label>
+      </div>
+      <div id="errors" class="errors" role="status" hidden><strong data-s="errors"></strong><ul></ul></div>
+    </section>
+    <section class="panel reader" aria-labelledby="h-reader">
+      <div class="row"><h2 id="h-reader" class="head" data-s="reader"></h2><button id="full" type="button" hidden></button></div>
+      <div id="formula" class="formula" aria-live="polite"></div>
+      <p id="prose-out" class="prose-out"></p>
+      <div id="controls" class="controls"></div>
+      <div id="plot" class="plot"></div>
+      <p id="plot-error" class="plot-error" hidden></p>
+      <div id="stepbar" class="stepbar" hidden>
+        <button id="play" type="button" class="primary"></button>
+        <button id="prev" type="button" data-s="prev"></button>
+        <ol id="steps"></ol>
+        <button id="next" type="button" data-s="next"></button>
+      </div>
+      <p class="help" data-s="help_scrub"></p>
+    </section>
+    <aside class="side" data-panel="file">
+      <section class="panel" aria-labelledby="h-card" data-panel="card">
+        <h2 id="h-card" class="head" data-s="parts_head"></h2>
+        <div id="parts" class="parts"></div>
+        <div id="card" class="card"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-blocks" data-panel="blocks">
+        <h2 id="h-blocks" class="head" data-s="blocks_head"></h2>
+        <p class="help" data-s="blocks_help"></p>
+        <div class="hat" data-s="blocks_hat"></div>
+        <div id="blocks" class="blocks"></div>
+        <button id="add-step" type="button" data-s="blocks_add_step"></button>
+      </section>
+
+      <section class="panel concepts" aria-labelledby="h-concepts" data-panel="concepts">
+        <div class="row"><h2 id="h-concepts" class="head" data-s="concepts"></h2><span id="budget" class="small"></span></div>
+        <div id="meter" class="meter" aria-hidden="true"></div>
+        <p class="help" data-s="budget_note"></p>
+        <ol id="concept-list" class="concept-list"></ol>
+        <div class="selection">
+          <p><span class="small" data-s="selected"></span> <code id="selection"></code></p>
+          <button id="add" type="button" class="primary" data-s="add_concept"></button>
+          <p id="no-selection" class="help" data-s="no_selection"></p>
+        </div>
+      </section>
+      <details class="about panel"><summary data-s="about"></summary><p data-s="about_text"></p></details>
+    </aside>
+  </main>
+  <p id="message" role="status"></p>
+  <dialog id="copy-dialog">
+    <p class="help" data-s="copy_help"></p>
+    <textarea id="copy-text" rows="10" readonly class="code"></textarea>
+    <div class="row"><button id="copy" type="button" class="primary" data-s="copy"></button><button id="close" type="button" data-s="close"></button></div>
+  </dialog>
+  <noscript><p>This page needs JavaScript and WebAssembly.</p></noscript>
+  <script type="module" src="app.js?v=2c01478664d5"></script>
+</body>
+</html>
