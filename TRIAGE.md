@@ -6,4 +6,4 @@ Compare at least one result with a case worked out by hand. **Severity** is *blo
 
 | # | Request, in the person's words | Expected | What happened | Severity | Cost | Disposition |
 | --- | --- | --- | --- | --- | --- | --- |
-| T1 | | | | | | |
+| T1 | "i dont want to expose all the latex and the coding stuff to the user, i want it to be stuff like a drop down menu or scratch programming in order to build the visualizations from terms in the formula. build a tab in the design log investigating how to hide all of the latex and coding in order to make this usable for kids in a 6th grade setting" | A sixth grader builds a visualisation from the parts of a formula without seeing LaTeX or the sheet. | The editor shows seven code surfaces (R2.1). Investigated on the journal page "5 · Sixth grade" with mockups K1–K4; nothing built yet. | wanted | large: five parts, in the build order on that page | open (waits on FB-Q11–FB-Q15, R2.2) |

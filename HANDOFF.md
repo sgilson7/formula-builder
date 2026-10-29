@@ -59,6 +59,7 @@ Formula Builder is a browser formula editor for teaching material, built on Head
 Every `SECOND-ORDER.md` row with status *person*, by number, with what the person has to decide or supply. `scripts/notebook_check.py` fails while one is missing.
 
 - R1.14: read the five examples and the strings in `data/strings.json`; send formulas from your own courses (FB-Q2).
+- R2.2: answer FB-Q11 to FB-Q15 on the journal page "5 · Sixth grade" (T1), read the student word table and menu words there (written by the agent), and arrange a session with sixth graders.
 - R1.5: answered on 2026-10-28 for FB-Q1, FB-Q3, FB-Q4 and FB-Q5; FB-Q2 and FB-Q6 to FB-Q10 took their defaults.
 
 ## Mistakes so far
