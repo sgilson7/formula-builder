@@ -1,52 +1,118 @@
 [
-  {
-    "id": "line",
-    "label": "Slope and intercept",
-    "doc": {
-      "title": "Slope and intercept",
-      "formulas": "y = m x + b",
-      "sheet": "concept slope: m\n  say how far y rises for one step to the right in x\n  label above\n  scrub -3 .. 3 step 0.5 = 1.5\n  limit -2 .. 2\nconcept intercept: b\n  say where the line crosses the y axis, when x is 0\n  brace below\n  slider -4 .. 4 step 0.5 = 1\nplot y over x from -5 to 5\n  y from -8 to 8\n  mark slope rise x = 1\n  mark intercept intercept\n",
-      "prose": "The line rises by its [slope](slope) for each step to the right, and crosses the y axis at the [intercept](intercept). Drag the slope sideways, or slide the intercept."
-    }
-  },
-  {
-    "id": "descent",
-    "label": "One step of gradient descent",
-    "doc": {
-      "title": "One step of gradient descent",
-      "formulas": "w_{k+1} = w_k - \\alpha \\nabla f(w_k)\nf(w) = \\frac{(w - 3)^2}{5} + \\frac{1}{2}",
-      "sheet": "concept next: w_{k+1}\n  name next weight\n  say where this update moves the weight\n  label below next weight\nconcept current: w_k\n  name current weight\n  say the weight before this step\n  slider 0 .. 6 step 0.1 = 1.2\nconcept stepsize: \\alpha\n  name step size\n  say how far one update moves\n  scrub 0.1 .. 2.5 step 0.1 = 0.8\n  tint\nconcept gradient: \\nabla f(w_k)\n  name gradient\n  say the slope of the loss at the current weight\n  brace below gradient\nplot f over w from 0 to 6\n  mark current point w = w_k\n  mark next point w = w_{k+1}\n",
-      "prose": "Start at the [current weight](current), find the [gradient](gradient) of the loss there, and move against it by the [step size](stepsize) to reach the [next weight](next). Make the step size large and watch the next weight jump past the lowest point."
-    }
-  },
-  {
-    "id": "complex",
-    "label": "The real part of a complex number",
-    "doc": {
-      "title": "The real part of a complex number",
-      "formulas": "\\mathrm{Re}(z) = \\frac{z + \\bar{z}}{2}\n\\mathrm{Re}(z) = \\frac{(a + bi) + (a - bi)}{2}\n\\mathrm{Re}(z) = \\frac{a + a + bi - bi}{2}\n\\mathrm{Re}(z) = \\frac{2a}{2} = a",
-      "sheet": "concept real: a\n  name real part\n  say the part of z on the real axis\nconcept imaginary: bi\n  name imaginary part\n  say the part of z on the imaginary axis\nconcept conjugate: \\bar{z}\n  name conjugate\n  say z with the sign of its imaginary part flipped\n  label below conjugate\nstep Start from the definition\n  formula 1\nstep Write z and its conjugate in parts\n  formula 2\nstep Collect the terms\n  formula 3\n  strike imaginary\nstep The imaginary parts cancel\n  formula 4\n  focus real\n",
-      "prose": "Adding z to its [conjugate](conjugate) cancels the [imaginary part](imaginary) and doubles the [real part](real). Press Play to watch it happen, or step through by hand."
-    }
-  },
-  {
-    "id": "interest",
-    "label": "Compound interest",
-    "doc": {
-      "title": "Compound interest",
-      "formulas": "A = P \\left(1 + \\frac{r}{n}\\right)^{t n}",
-      "sheet": "concept principal: P\n  say the money put in at the start\n  edit 1000\nconcept rate: r\n  name yearly rate\n  say the interest rate for one year, as a fraction\n  slider 0 .. 0.2 step 0.01 = 0.05\nconcept years: t\n  say how long the money grows\n  scrub 0 .. 40 step 1 = 10\nconcept growth: \\left(1 + \\frac{r}{n}\\right)^{t n}\n  name growth factor\n  say how many times over the money multiplies\n  border\nhidden n 1 .. 365 step 1 = 12 times it compounds each year\nplot A over t from 0 to 40\n  mark years point t = t\n",
-      "prose": "Put in a [principal](principal) and let it grow at a [yearly rate](rate) for some [years](years). The [growth factor](growth) multiplies the principal. Type a new principal into its box."
-    }
-  },
-  {
-    "id": "pythagoras",
-    "label": "Pythagoras",
-    "doc": {
-      "title": "Pythagoras",
-      "formulas": "c^2 = a^2 + b^2\nc = \\sqrt{a^2 + b^2}",
-      "sheet": "concept hypotenuse: c\n  say the side across from the right angle\n  label above\n  pointer\nconcept sidea: a\n  name side a\n  slider 1 .. 12 step 1 = 3\nconcept sideb: b\n  name side b\n  slider 1 .. 12 step 1 = 4\nconcept squares: a^2 + b^2\n  name sum of the squares\n  say the area of the two smaller squares together\n  border\n",
-      "prose": "The square on the [hypotenuse](hypotenuse) equals the [sum of the squares](squares) on [side a](sidea) and [side b](sideb). Hover the hypotenuse to see its length."
-    }
+ {
+  "id": "line",
+  "label": "Slope and intercept",
+  "doc": {
+   "title": "Slope and intercept",
+   "formulas": "y = m x + b",
+   "sheet": "concept slope: m\n  say how far y rises for one step to the right in x\n  label above\n  scrub -3 .. 3 step 0.5 = 1.5\n  limit -2 .. 2\nconcept intercept: b\n  say where the line crosses the y axis, when x is 0\n  brace below\n  slider -4 .. 4 step 0.5 = 1\nplot y over x from -5 to 5\n  y from -8 to 8\n  mark slope rise x = 1\n  mark intercept intercept\n",
+   "prose": "The line rises by its [slope](slope) for each step to the right, and crosses the y axis at the [intercept](intercept). Drag the slope sideways, or slide the intercept."
   }
+ },
+ {
+  "id": "descent",
+  "label": "One step of gradient descent",
+  "doc": {
+   "title": "One step of gradient descent",
+   "formulas": "w_{k+1} = w_k - \\alpha \\nabla f(w_k)\nf(w) = \\frac{(w - 3)^2}{5} + \\frac{1}{2}",
+   "sheet": "concept next: w_{k+1}\n  name next weight\n  say where this update moves the weight\n  label below next weight\nconcept current: w_k\n  name current weight\n  say the weight before this step\n  slider 0 .. 6 step 0.1 = 1.2\nconcept stepsize: \\alpha\n  name step size\n  say how far one update moves\n  scrub 0.1 .. 2.5 step 0.1 = 0.8\n  tint\nconcept gradient: \\nabla f(w_k)\n  name gradient\n  say the slope of the loss at the current weight\n  brace below gradient\nplot f over w from 0 to 6\n  mark current point w = w_k\n  mark next point w = w_{k+1}\n",
+   "prose": "Start at the [current weight](current), find the [gradient](gradient) of the loss there, and move against it by the [step size](stepsize) to reach the [next weight](next). Make the step size large and watch the next weight jump past the lowest point."
+  }
+ },
+ {
+  "id": "complex",
+  "label": "The real part of a complex number",
+  "doc": {
+   "title": "The real part of a complex number",
+   "formulas": "\\mathrm{Re}(z) = \\frac{z + \\bar{z}}{2}\n\\mathrm{Re}(z) = \\frac{(a + bi) + (a - bi)}{2}\n\\mathrm{Re}(z) = \\frac{a + a + bi - bi}{2}\n\\mathrm{Re}(z) = \\frac{2a}{2} = a",
+   "sheet": "concept real: a\n  name real part\n  say the part of z on the real axis\nconcept imaginary: bi\n  name imaginary part\n  say the part of z on the imaginary axis\nconcept conjugate: \\bar{z}\n  name conjugate\n  say z with the sign of its imaginary part flipped\n  label below conjugate\nstep Start from the definition\n  formula 1\nstep Write z and its conjugate in parts\n  formula 2\nstep Collect the terms\n  formula 3\n  strike imaginary\nstep The imaginary parts cancel\n  formula 4\n  focus real\n",
+   "prose": "Adding z to its [conjugate](conjugate) cancels the [imaginary part](imaginary) and doubles the [real part](real). Press Play to watch it happen, or step through by hand."
+  }
+ },
+ {
+  "id": "interest",
+  "label": "Compound interest",
+  "doc": {
+   "title": "Compound interest",
+   "formulas": "A = P \\left(1 + \\frac{r}{n}\\right)^{t n}",
+   "sheet": "concept principal: P\n  say the money put in at the start\n  edit 1000\nconcept rate: r\n  name yearly rate\n  say the interest rate for one year, as a fraction\n  slider 0 .. 0.2 step 0.01 = 0.05\nconcept years: t\n  say how long the money grows\n  scrub 0 .. 40 step 1 = 10\nconcept growth: \\left(1 + \\frac{r}{n}\\right)^{t n}\n  name growth factor\n  say how many times over the money multiplies\n  border\nhidden n 1 .. 365 step 1 = 12 times it compounds each year\nplot A over t from 0 to 40\n  mark years point t = t\n",
+   "prose": "Put in a [principal](principal) and let it grow at a [yearly rate](rate) for some [years](years). The [growth factor](growth) multiplies the principal. Type a new principal into its box."
+  }
+ },
+ {
+  "id": "pythagoras",
+  "label": "Pythagoras",
+  "doc": {
+   "title": "Pythagoras",
+   "formulas": "c^2 = a^2 + b^2\nc = \\sqrt{a^2 + b^2}",
+   "sheet": "concept hypotenuse: c\n  say the side across from the right angle\n  label above\n  pointer\nconcept sidea: a\n  name side a\n  slider 1 .. 12 step 1 = 3\nconcept sideb: b\n  name side b\n  slider 1 .. 12 step 1 = 4\nconcept squares: a^2 + b^2\n  name sum of the squares\n  say the area of the two smaller squares together\n  border\n",
+   "prose": "The square on the [hypotenuse](hypotenuse) equals the [sum of the squares](squares) on [side a](sidea) and [side b](sideb). Hover the hypotenuse to see its length."
+  }
+ },
+ {
+  "id": "rectangle",
+  "label": "Area of a rectangle",
+  "group": "shelf",
+  "doc": {
+   "title": "Area of a rectangle",
+   "formulas": "A = \\ell \\times w",
+   "sheet": "concept length: \\ell\n  unit cm\n  label above\n  slider 1 .. 10 step 1 = 4\nconcept width: w\n  unit cm\n  label above\n  slider 1 .. 10 step 1 = 3\nconcept area: A\n  say the space inside the rectangle, in square units\n  label below\n",
+   "prose": "The [area](area) is the [length](length) times the [width](width). Slide them and watch it change."
+  }
+ },
+ {
+  "id": "triangle",
+  "label": "Area of a triangle",
+  "group": "shelf",
+  "doc": {
+   "title": "Area of a triangle",
+   "formulas": "A = \\frac{1}{2} b h",
+   "sheet": "concept base: b\n  unit cm\n  say the side the triangle stands on\n  slider 1 .. 10 step 1 = 6\nconcept height: h\n  unit cm\n  say how tall the triangle is, straight up from its base\n  label above\n  slider 1 .. 10 step 1 = 4\nconcept area: A\n  say the space inside the triangle, in square units\n  label below\n",
+   "prose": "Half the [base](base) times the [height](height) gives the [area](area)."
+  }
+ },
+ {
+  "id": "box",
+  "label": "Volume of a box",
+  "group": "shelf",
+  "doc": {
+   "title": "Volume of a box",
+   "formulas": "V = \\ell \\times w \\times h",
+   "sheet": "concept length: \\ell\n  unit cm\n  slider 1 .. 10 step 1 = 5\nconcept width: w\n  unit cm\n  slider 1 .. 10 step 1 = 3\nconcept height: h\n  unit cm\n  slider 1 .. 10 step 1 = 2\nconcept volume: V\n  say how many unit cubes fill the box\n  label below\n",
+   "prose": "The [volume](volume) is the [length](length) times the [width](width) times the [height](height)."
+  }
+ },
+ {
+  "id": "distance",
+  "label": "Distance at a steady speed",
+  "group": "shelf",
+  "doc": {
+   "title": "Distance at a steady speed",
+   "formulas": "d = r \\times t",
+   "sheet": "concept speed: r\n  unit km/h\n  label above\n  slider 5 .. 80 step 5 = 65\nconcept time: t\n  unit h\n  label above\n  scrub 0 .. 10 step 1 = 2\nconcept distance: d\n  unit km\n  say how far you go\n  label below\nplot d over t from 0 to 10\n  y from 0 to 800\n  mark time point t = t\n",
+   "prose": "Going at a steady [speed](speed), the [distance](distance) grows with the [time](time). Drag the time and watch the point move."
+  }
+ },
+ {
+  "id": "cube",
+  "label": "Volume and outside of a cube",
+  "group": "shelf",
+  "doc": {
+   "title": "Volume and outside of a cube",
+   "formulas": "V = s^{3}\nA = 6 s^{2}",
+   "sheet": "concept side: s\n  unit cm\n  label above\n  slider 0.5 .. 5 step 0.5 = 0.5\nconcept volume: V\n  say how many unit cubes fill the cube\nconcept outside: A\n  name outside area\n  say the area of all six faces together\n",
+   "prose": "One [side](side) gives both the [volume](volume) and the [outside area](outside)."
+  }
+ },
+ {
+  "id": "share",
+  "label": "Sharing a product",
+  "group": "shelf",
+  "doc": {
+   "title": "Sharing a product",
+   "formulas": "3 \\left(2 + x\\right)\n3 \\times 2 + 3 \\times x\n6 + 3 x",
+   "sheet": "concept three: 3\n  name the 3s\nconcept x: x\n  name number in the bracket\nstep 3 groups of (2 + x)\n  formula 1\nstep Share the 3 with each part\n  formula 2\n  focus three\nstep Work out 3 times 2\n  formula 3\n",
+   "prose": "The [3](three) multiplies each part inside the bracket. Press Play."
+  }
+ }
 ]

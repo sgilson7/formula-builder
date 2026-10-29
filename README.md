@@ -6,6 +6,17 @@ A formula editor for teaching material. Type a formula in LaTeX, mark the concep
 
 Everything runs in your browser tab. Nothing is uploaded, and the page keeps nothing between visits: save a document as a file, or keep its link, which carries the whole document after the `#`.
 
+## Three modes, for a sixth-grade class
+
+The editor opens in **Build**, made for students with no LaTeX and no code on screen:
+
+- **Shelf:** start from a formula in the sixth-grade standards, such as the area of a triangle, d = r × t, or 3(2 + x).
+- **Tiles and keys:** change the formula with a keypad. A key goes in only where it fits, so a formula cannot break.
+- **Cards:** tap a symbol (tap again for a bigger part) and finish sentences with menus: what it is, its unit, whether readers drag it or use a slider, and from what to what.
+- **Blocks:** build the steps from blocks such as *show line 2*, *spotlight the 3s* and *cross out*, and press Play.
+
+**Explore** is for reading: hover, drag, slide and play, with nothing to change. A link a student shares opens there. **Teacher** has everything, every export, and a switch that shows the LaTeX and the sheet beside the cards and blocks.
+
 ## Colour-vision views
 
 Colour is the paper's most common augmentation, so every concept also carries an underline pattern (solid, dashed, dotted, wave, double) and a number, in every view and every export.

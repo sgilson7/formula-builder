@@ -15,6 +15,9 @@ pub struct Doc {
     pub formulas: String,
     pub sheet: String,
     pub prose: String,
+    /// the mode a shared link opens in: `explore`, `build`, or empty
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub open: String,
 }
 
 #[derive(Debug)]
@@ -164,6 +167,7 @@ mod tests {
             formulas: formulas.into(),
             sheet: sheet.into(),
             prose: String::new(),
+            ..Doc::default()
         }
     }
 

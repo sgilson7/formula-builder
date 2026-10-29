@@ -47,6 +47,8 @@ Terms from the paper go into `GLOSSARY.md` before a string uses them: *math augm
 
 Granted 2026-10-28 (FB-Q4, FB-Q5, FB-Q1, FB-Q3), in the person's words: *"q5 latex parser and layout in rust corse q5 yes i give explicit permission to create a public repo and pages for deployment q1 Formula Builder q3 yes. now build the first version and create a tab in the design journal comparing mockups to reality, and determine any missing features from the mockup and fix them; by the end of this i want a link i can test out"*. The plan is approved in advance for this round. Where this brief is silent, the agent decides, records the decision in `SECOND-ORDER.md`, and continues; unanswered questions FB-Q2 and FB-Q6 to FB-Q10 take the defaults the journal lists. The agent may not loosen a Builder requirement or a boundary test, and may not add a server, an account, analytics or any off-origin request. The agent may create the public repository `sgilson7/formula-builder` and publish it to GitHub Pages with `./scripts/publish.sh` once `./scripts/check.sh` passes.
 
+Round 2 granted 2026-10-28 (T1, FB-Q11 to FB-Q15), in the person's words: *"go with your defaults and build it"*. The plan is the build order on the journal page "5 · Sixth grade"; the same limits and the same publishing grant apply.
+
 ## Journal
 
 `default`

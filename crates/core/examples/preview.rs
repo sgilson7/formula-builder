@@ -17,6 +17,7 @@ fn main() {
             formulas: f.into(),
             sheet: s.into(),
             prose: String::new(),
+            ..Doc::default()
         };
         let m = Model::build(&d);
         eprintln!("{name}: errors {:?}", m.errors);

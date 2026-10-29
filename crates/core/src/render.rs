@@ -16,7 +16,8 @@ use crate::value::Fx;
 pub struct Look {
     pub view: View,
     pub hover: Option<usize>,
-    pub select: Option<(usize, usize)>,
+    /// the selected part: its formula and the nodes it covers
+    pub select: Option<(usize, Vec<usize>)>,
     pub step: Option<usize>,
     /// hit areas, data attributes and the editable field
     pub interactive: bool,
@@ -496,7 +497,11 @@ pub fn scene(m: &Model, values: &[(String, Fx)], look: &Look, shown: &[usize]) -
                 below_labels.push((cx, text_width(text, LABEL_SIZE), o.concept, text.clone(), bottom));
             }
             if look.interactive {
-                let mut attrs = format!(r#" data-c="{}""#, c.num);
+                // a tap on a part selects that part, so its card opens
+                let mut attrs = format!(
+                    r#" data-c="{}" data-n="{}:{}" data-part="{}:{}:{}""#,
+                    c.num, o.formula, o.lo, o.row, o.first, o.len
+                );
                 if let Some(ctl) = &c.control {
                     if ctl.kind == ControlKind::Scrub && o.len == 1 {
                         let v = values
@@ -603,17 +608,21 @@ pub fn scene(m: &Model, values: &[(String, Fx)], look: &Look, shown: &[usize]) -
             }
             bottom = row + 80;
         }
-        if let Some((nf, nid)) = look.select {
-            if nf == fi {
-                if let Some(b) = laid.find(nid) {
-                    sc.over += &format!(
-                        r#"<rect x="{}" y="{}" width="{}" height="{}" rx="40" fill="none" stroke="{SELECT}" stroke-width="40" stroke-dasharray="90 60"/>"#,
-                        bx + b.x - 40,
-                        base - b.y - b.h - 40,
-                        b.w + 80,
-                        b.h + b.d + 80
-                    );
-                }
+        if let Some((nf, nodes)) = &look.select {
+            let boxes: Vec<_> = nodes.iter().filter_map(|n| laid.find(*n)).collect();
+            if *nf == fi && !boxes.is_empty() {
+                // one box around the whole part, however many nodes it covers
+                let x0 = boxes.iter().map(|b| b.x).min().unwrap_or(0);
+                let x1 = boxes.iter().map(|b| b.x + b.w).max().unwrap_or(0);
+                let top = boxes.iter().map(|b| b.y + b.h).max().unwrap_or(0);
+                let bot = boxes.iter().map(|b| b.d - b.y).max().unwrap_or(0);
+                sc.over += &format!(
+                    r#"<rect x="{}" y="{}" width="{}" height="{}" rx="40" fill="none" stroke="{SELECT}" stroke-width="40" stroke-dasharray="90 60"/>"#,
+                    bx + x0 - 40,
+                    base - top - 40,
+                    x1 - x0 + 80,
+                    top + bot + 80
+                );
             }
         }
         y = bottom + ROW_GAP;

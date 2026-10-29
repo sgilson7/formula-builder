@@ -19,10 +19,81 @@ STRINGS = json.loads((ROOT / "data" / "strings.json").read_text())
 EXAMPLES = json.loads((ROOT / "data" / "examples.json").read_text())
 
 
+SHELF = [e for e in EXAMPLES if e.get("group") == "shelf"]
+
+
+def student(page, check):
+    """The Build mode a student opens to (journal page 5)."""
+    check(page.inner_text("#intro p") == STRINGS["kid_intro"], "a student reads the student intro")
+    check(page.inner_text("#message") == "", "no error message is shown")
+    labels = page.eval_on_selector_all("#examples option", "os => os.map(o => o.textContent)")
+    check(labels == [e["label"] for e in SHELF], "the shelf offers the sixth-grade formulas only")
+    check(not page.is_visible("#formulas") and not page.is_visible("#sheet"), "no LaTeX or sheet is on a student's screen")
+    check(not page.is_visible("[data-export='latex']"), "no LaTeX export for a student")
+    # A = l x w: five tiles; + then 2 at the end makes seven
+    check(page.locator("#tile-lines .tile").count() == 5, "A = l x w is five tiles")
+    page.click("#keys button:text-is('+')")
+    page.click("#keys button:text-is('2')")
+    page.wait_for_selector("#tile-lines .tline >> nth=0")
+    check(page.locator("#tile-lines .tile").count() == 7, "two keys add two tiles")
+    eq = page.locator("#keys button:text-is('=')")
+    check(eq.is_disabled(), "a second = does not fit, so its key is off")
+    page.click("#keys button[aria-label=%s]" % json.dumps(STRINGS["key_back"]))
+    page.click("#keys button[aria-label=%s]" % json.dumps(STRINGS["key_back"]))
+    check(page.locator("#tile-lines .tile").count() == 5, "delete twice takes both away")
+
+    # Tap h in the triangle: its card opens as the height, part 2
+    page.select_option("#examples", "triangle")
+    page.wait_for_selector("#formula use[data-c='2']")
+    page.locator("#formula use[data-c='2']").first.click(force=True)
+    page.wait_for_selector("#card .look .badge")
+    check(page.inner_text("#card .look .badge") == "2", "a tap on h opens the card of part 2")
+    check(page.locator("#card select").first.input_value() == "height", "the card says it is the height")
+    # Readers can drag the number: h becomes scrubbable, still at 4
+    page.locator("#card select").nth(2).select_option("drag")
+    page.wait_for_selector("#formula [data-scrub='2']")
+    check(page.locator("#formula [data-scrub='2']").get_attribute("aria-valuetext") == "4", "the height can be dragged, from 4")
+
+    # Blocks: the sharing example has three steps; add a fourth
+    page.select_option("#examples", "share")
+    page.wait_for_selector("#blocks .cblock")
+    check(page.locator("#blocks .cblock").count() == 3, "three steps are three step blocks")
+    page.click("#add-step")
+    page.wait_for_selector("#blocks .cblock >> nth=3")
+    check(page.locator("#steps li").count() == 4, "a new step block is a fourth step to play")
+    check(page.evaluate("document.documentElement.scrollWidth <= innerWidth"), "the blocks fit the page: no sideways scroll")
+
+    # A student's shared link opens in Explore, with no editor
+    page.click("[data-export='link']:not([data-value])")
+    page.wait_for_selector("#copy-dialog[open]")
+    link = page.input_value("#copy-text")
+    page.click("#close")
+    base = page.url.split("/index.html")[0]
+    # a pasted link opens a fresh page; going there from this page would be
+    # only a change of fragment
+    page.goto("about:blank")
+    page.goto(base + "/index.html" + link[len(STRINGS["site"]):])
+    page.wait_for_selector("body[data-ready='true']", state="attached")
+    page.wait_for_selector("#roles button.on")
+    check(page.inner_text("#roles button.on") == STRINGS["role_explore"], "a shared link opens in Explore")
+    check(not page.is_visible("#tile-lines") and not page.is_visible("#card"), "Explore shows the reader alone")
+    check(page.inner_text("#prose-out") == "The 3 multiplies each part inside the bracket. Press Play.", "the link opens the shared document, not the first on the shelf")
+    page.goto(base + "/index.html")
+    page.wait_for_selector("body[data-ready='true']", state="attached")
+
+
 def run(page, check, engine):
     check(page.inner_text("#title") == STRINGS["title"], "the title from data/strings.json is drawn")
+    student(page, check)
+    page.click("#roles button:text-is(%s)" % json.dumps(STRINGS["role_teach"]))
+    page.wait_for_selector("#examples option >> nth=%d" % (len(EXAMPLES) - 1), state="attached")
+    check(not page.is_visible("#formulas"), "the code stays hidden until its switch is on")
+    page.check("#code")
+    page.wait_for_selector("#formulas", state="visible")
+    check(True, "the switch shows the LaTeX in the Teacher mode")
+    page.select_option("#examples", "line")
+    page.wait_for_selector("#formula [data-scrub='1']")
     check(page.inner_text("#intro p") == STRINGS["intro"], "the intro from data/strings.json is drawn")
-    check(page.inner_text("#message") == "", "no error message is shown")
     labels = page.eval_on_selector_all("#examples option", "os => os.map(o => o.textContent)")
     check(labels == [e["label"] for e in EXAMPLES], "every example is offered by name")
     # y = m x + b with the slope shown as its value 1.5: y = 1 . 5 x + b
@@ -63,7 +134,7 @@ def run(page, check, engine):
 
     # The link export opens the same document in the embed page.
     page.select_option("#examples", "line")
-    page.click("[data-export='link']")
+    page.click("[data-export='link']:not([data-value])")
     page.wait_for_selector("#copy-dialog[open]")
     link = page.input_value("#copy-text")
     check(link.startswith(STRINGS["site"] + "#f="), "the link points at the published site")

@@ -205,6 +205,7 @@ mod tests {
             formulas: f.into(),
             sheet: s.into(),
             prose: String::new(),
+            ..Doc::default()
         })
     }
 
@@ -251,6 +252,7 @@ mod tests {
             formulas: "y = m x + b".into(),
             sheet: "concept s: m".into(),
             prose: "a".into(),
+            ..Doc::default()
         };
         let f = fragment(&d);
         assert!(f.starts_with("#f=") && f.is_ascii());

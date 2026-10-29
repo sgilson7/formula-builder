@@ -82,5 +82,75 @@
     "find": ".then(x.1.cmp(&y.1))",
     "replace": ".then(y.1.cmp(&x.1))",
     "test": "concepts_that_start_together_open_outer_first"
+  },
+  {
+    "name": "one = to a line",
+    "file": "crates/core/src/tiles.rs",
+    "find": "if !top || has_equals || before.map(is_op).unwrap_or(true) {",
+    "replace": "if !top || before.map(is_op).unwrap_or(true) {",
+    "test": "a_key_that_does_not_fit_is_refused"
+  },
+  {
+    "name": "a tap grows through the term",
+    "file": "crates/core/src/parts.rs",
+    "find": "    is_cp(n, &[0x2B, 0x2D, 0x2212, 0xB1])",
+    "replace": "    is_cp(n, &[])",
+    "test": "a_tap_grows_through_the_term_and_the_side_to_the_whole_line"
+  },
+  {
+    "name": "the code shows only with its switch on",
+    "file": "crates/core/src/api.rs",
+    "find": "        if state.code {\n            out.push(\"code\");",
+    "replace": "        if true {\n            out.push(\"code\");",
+    "test": "the_code_shows_only_in_the_teacher_mode_with_its_switch_on"
+  },
+  {
+    "name": "a student mode reads the kid word",
+    "file": "crates/core/src/api.rs",
+    "find": "        if let Some(v) = state.strings.get(&format!(\"kid_{key}\")) {",
+    "replace": "        if let Some(v) = state.strings.get(&format!(\"none_{key}\")) {",
+    "test": "a_student_mode_reads_the_kid_word_where_one_exists"
+  },
+  {
+    "name": "a stale selection covers nothing",
+    "file": "crates/core/src/parts.rs",
+    "find": ".and_then(|r| r.kids.get(self.first..self.first + self.len))",
+    "replace": ".map(|r| &r.kids[self.first..self.first + self.len])",
+    "test": "a_run_past_the_end_of_its_row_covers_nothing"
+  },
+  {
+    "name": "explore refuses a selection",
+    "file": "crates/core/src/api.rs",
+    "find": "                state.select = if state.role == \"explore\" {",
+    "replace": "                state.select = if false {",
+    "test": "explore_refuses_a_selection_and_shows_no_card"
+  },
+  {
+    "name": "a link opens in the mode it names",
+    "file": "crates/core/src/api.rs",
+    "find": "                    state.role = state.doc.open.clone();",
+    "replace": "",
+    "test": "a_shared_link_opens_in_the_mode_it_names"
+  },
+  {
+    "name": "a part's name is letters only",
+    "file": "crates/core/src/sheetedit.rs",
+    "find": ".filter(|c| c.is_ascii_alphabetic())",
+    "replace": ".filter(|c| c.is_ascii_alphanumeric())",
+    "test": "a_student_word_becomes_a_free_one_word_name"
+  },
+  {
+    "name": "a part on a tap is selected whole",
+    "file": "crates/core/src/api.rs",
+    "find": "                    (Some(t), c) if c != Some(t) => Some(t),",
+    "replace": "                    (Some(_), _) if false => None,",
+    "test": "a_tap_on_a_part_of_several_symbols_selects_it_whole"
+  },
+  {
+    "name": "a key never empties a line",
+    "file": "crates/core/src/api.rs",
+    "find": "    tiles::press(t, c, k).filter(|(after, _)| !after.is_empty())",
+    "replace": "    tiles::press(t, c, k)",
+    "test": "keys_write_the_formula_and_a_key_that_does_not_fit_is_off"
   }
 ]

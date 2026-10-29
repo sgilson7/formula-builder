@@ -88,6 +88,8 @@ pub struct Concept {
     pub pattern_src: String,
     pub name: String,
     pub say: String,
+    /// the unit a reader reads beside its value, such as `cm`
+    pub unit: String,
     pub label: Option<(Side, String)>,
     pub brace: Option<(Side, String)>,
     pub border: bool,
@@ -268,6 +270,7 @@ pub fn parse_sheet(text: &str) -> Sheet {
                         num,
                         pattern_src: pattern,
                         say: String::new(),
+                        unit: String::new(),
                         label: None,
                         brace: None,
                         border: false,
@@ -384,6 +387,7 @@ fn concept_line(sheet: &mut Sheet, words: &[&str], line: &str, line_no: usize) {
     match words[0] {
         "name" => c.name = words_after(line, 1),
         "say" => c.say = words_after(line, 1),
+        "unit" => c.unit = words_after(line, 1),
         "label" | "brace" => match side(words.get(1)) {
             Some(s) => {
                 let text = words_after(line, 2);

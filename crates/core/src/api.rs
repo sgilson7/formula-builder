@@ -15,9 +15,11 @@ use crate::export;
 use crate::glossary;
 use crate::page::{self, Strings};
 use crate::palette::{paint, View};
+use crate::parts::{self, Run};
 use crate::render::{morph, pattern_sample, plot_svg, scene, svg, value_text, Look, Scene};
 use crate::sheet::{parse_prose, ControlKind, COLOUR_BUDGET};
-use crate::tex::{Node, K};
+use crate::sheetedit::{self, StepText};
+use crate::tiles::{self, Cursor, Key};
 use crate::value::Fx;
 
 fn ok<T: Serialize>(value: &T) -> String {
@@ -43,6 +45,16 @@ pub struct Example {
     pub id: String,
     pub label: String,
     pub doc: Doc,
+    /// `shelf` for the sixth-grade formulas a student starts from
+    #[serde(default)]
+    pub group: String,
+}
+
+/// The three ways into the editor (journal K4).
+pub const ROLES: [&str; 3] = ["explore", "build", "teach"];
+
+fn build_role() -> String {
+    "build".into()
 }
 
 /// What the page hands back on the next call. The page stores it and does
@@ -56,7 +68,8 @@ pub struct State {
     pub view: String,
     pub step: Option<usize>,
     pub hover: Option<usize>,
-    pub select: Option<(usize, usize)>,
+    /// the selected part: formula, row, first sibling, how many (see parts.rs)
+    pub select: Option<(usize, usize, usize, usize)>,
     pub overrides: Vec<(String, String)>,
     pub scrub: Option<(usize, i64, String)>,
     pub ghost: Vec<(String, String)>,
@@ -72,6 +85,18 @@ pub struct State {
     /// PNG and SVG exports without the canvas colour
     #[serde(default)]
     pub export_clear: bool,
+    /// explore, build or teach
+    #[serde(default = "build_role")]
+    pub role: String,
+    /// the Teacher mode's switch that shows the LaTeX and the sheet
+    #[serde(default)]
+    pub code: bool,
+    /// the line being written with tiles, and the cursor in it
+    #[serde(default)]
+    pub tiles: Option<(usize, String)>,
+    /// the letter keys are open
+    #[serde(default)]
+    pub letters: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -118,12 +143,83 @@ pub struct ControlUi {
     pub name: String,
     pub label: String,
     pub colour: String,
+    /// the value with its unit, for the readout
+    pub shown: String,
     pub min: String,
     pub max: String,
     pub step: String,
     pub value: String,
     pub lo: String,
     pub hi: String,
+}
+
+/// The card for the selected part: sentences a student finishes with menus
+/// and numbers, each writing one sheet line (journal K2).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Card {
+    /// the selected part, drawn on its own
+    pub picture: String,
+    /// its number as a part, or 0 before it is made one
+    pub num: usize,
+    pub name: String,
+    pub colour: String,
+    pub sample: String,
+    pub words: Vec<Choice>,
+    pub units: Vec<Choice>,
+    /// one symbol, so readers can change its value
+    pub number: bool,
+    pub controls: Vec<Choice>,
+    pub min: String,
+    pub max: String,
+    pub step: String,
+    pub say: String,
+    /// the words in the sentence that mean this part
+    pub sentence_words: String,
+    pub features: Vec<Choice>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct PartChip {
+    pub num: usize,
+    pub name: String,
+    pub colour: String,
+    pub on: bool,
+    /// the part's symbols are no longer in any formula
+    pub missing: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct TileLine {
+    pub html: String,
+    /// tiles can show this line; a root or subscript leaves it to the teacher
+    pub editable: bool,
+    pub on: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct KeyUi {
+    pub id: String,
+    pub face: String,
+    pub label: String,
+    pub on: bool,
+    pub group: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct BlockAct {
+    pub verb: String,
+    pub label: String,
+    pub arg: String,
+    pub args: Vec<Choice>,
+    pub value: String,
+    pub value_too: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct BlockStep {
+    pub caption: String,
+    pub on: bool,
+    pub acts: Vec<BlockAct>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -169,11 +265,75 @@ pub struct Ui {
     pub export_clear: bool,
     pub selection: String,
     pub out: Option<Out>,
+    pub role: String,
+    pub roles: Vec<Choice>,
+    /// the panels this mode shows, by their data-panel names
+    pub shows: Vec<String>,
+    pub code: bool,
+    pub card: Option<Card>,
+    pub parts: Vec<PartChip>,
+    pub tiles: Vec<TileLine>,
+    pub keys: Vec<KeyUi>,
+    pub letters: bool,
+    pub blocks: Vec<BlockStep>,
+    pub verbs: Vec<Choice>,
+    /// the prose without its link syntax
+    pub sentence: String,
     pub state: State,
 }
 
+/// A string in the words of the current mode: outside the Teacher mode a
+/// `kid_` key replaces the author's word (journal K4, the word table), and
+/// in Explore an `explore_` key replaces both.
 fn s(state: &State, key: &str) -> String {
+    if state.role == "explore" {
+        if let Some(v) = state.strings.get(&format!("explore_{key}")) {
+            return v.clone();
+        }
+    }
+    if state.role != "teach" {
+        if let Some(v) = state.strings.get(&format!("kid_{key}")) {
+            return v.clone();
+        }
+    }
     state.strings.get(key).cloned().unwrap_or_default()
+}
+
+fn strings_for(state: &State) -> Strings {
+    let mut out = state.strings.clone();
+    for k in state.strings.keys() {
+        if let Some(base) = k.strip_prefix("kid_").or(k.strip_prefix("explore_")) {
+            out.insert(base.to_string(), s(state, base));
+        }
+    }
+    out
+}
+
+fn list(state: &State, key: &str) -> Vec<String> {
+    s(state, key)
+        .split(',')
+        .map(|w| w.trim().to_string())
+        .filter(|w| !w.is_empty())
+        .collect()
+}
+
+/// A number as the sheet writes it: no trailing zeros, an ASCII minus.
+fn num_text(v: Fx) -> String {
+    let t = v.format(9);
+    if t.contains('.') {
+        t.trim_end_matches('0').trim_end_matches('.').to_string()
+    } else {
+        t
+    }
+}
+
+fn run_of(sel: (usize, usize, usize, usize)) -> Run {
+    Run {
+        f: sel.0,
+        row: sel.1,
+        first: sel.2,
+        len: sel.3,
+    }
 }
 
 fn fill(template: &str, pairs: &[(&str, String)]) -> String {
@@ -221,7 +381,11 @@ fn look(state: &State, m: &Model, interactive: bool) -> Look {
         view: view_of(state),
         hover: if interactive { state.hover } else { None },
         select: if interactive && state.mode == "edit" {
-            state.select
+            state.select.and_then(|sel| {
+                let run = run_of(sel);
+                let root = m.roots.get(run.f)?.as_ref()?;
+                Some((run.f, run.nodes(root)))
+            })
         } else {
             None
         },
@@ -324,6 +488,11 @@ fn controls(state: &State, m: &Model, values: &[(String, Fx)]) -> Vec<ControlUi>
             name: name.clone(),
             label: c.name.clone(),
             colour,
+            shown: if c.unit.is_empty() {
+                text(v, ctl.step)
+            } else {
+                format!("{} {}", text(v, ctl.step), c.unit)
+            },
             min: text(ctl.min, ctl.step),
             max: text(ctl.max, ctl.step),
             step: text(ctl.step, ctl.step),
@@ -369,6 +538,7 @@ fn controls(state: &State, m: &Model, values: &[(String, Fx)]) -> Vec<ControlUi>
             name: h.name.clone(),
             label: h.label.clone(),
             colour: crate::palette::INK.into(),
+            shown: text(v, st),
             min: text(h.control.min, st),
             max: text(h.control.max, st),
             step: text(st, st),
@@ -378,6 +548,441 @@ fn controls(state: &State, m: &Model, values: &[(String, Fx)]) -> Vec<ControlUi>
         });
     }
     out
+}
+
+/// The panels a mode shows, by the `data-panel` names in the page.
+fn shows(state: &State) -> Vec<String> {
+    let mut out: Vec<&str> = vec!["reader", "roles"];
+    if state.role != "explore" {
+        out.extend(["file", "tiles", "card", "blocks", "sentence", "exports"]);
+    }
+    if state.role == "teach" {
+        out.extend(["teach", "exports-all", "concepts"]);
+        if state.code {
+            out.push("code");
+        }
+    }
+    out.into_iter().map(String::from).collect()
+}
+
+/// A part drawn on its own, for the card.
+fn picture_of(src: &str, view: View) -> String {
+    let doc = Doc {
+        formulas: src.into(),
+        ..Doc::default()
+    };
+    let m = Model::build(&doc);
+    let lk = Look {
+        view,
+        hover: None,
+        select: None,
+        step: None,
+        interactive: false,
+        export_px: None,
+        ghost: vec![],
+        muted: vec![],
+        transparent: true,
+    };
+    let sc = scene(&m, &m.values(&[], None), &lk, &m.shown(None));
+    svg(&m, &sc, &lk)
+}
+
+/// The concept the selection is an occurrence of, if any.
+fn selected_concept(state: &State, m: &Model) -> Option<usize> {
+    let (f, row, first, len) = state.select?;
+    m.occs
+        .iter()
+        .find(|o| o.formula == f && o.row == row && o.first == first && o.len == len)
+        .map(|o| o.concept)
+}
+
+fn control_kind(c: &crate::sheet::Concept) -> &'static str {
+    match c.control.as_ref().map(|k| k.kind) {
+        Some(ControlKind::Scrub) => "drag",
+        Some(ControlKind::Slider) => "slider",
+        Some(ControlKind::Edit) => "type",
+        None => "none",
+    }
+}
+
+fn choices(state: &State, items: &[String], key_prefix: Option<&str>, on: &str) -> Vec<Choice> {
+    items
+        .iter()
+        .map(|id| Choice {
+            id: id.clone(),
+            label: match key_prefix {
+                Some(p) => s(state, &format!("{p}{id}")),
+                None => id.clone(),
+            },
+            on: id == on,
+        })
+        .collect()
+}
+
+fn card(state: &State, m: &Model) -> Option<Card> {
+    if state.role == "explore" {
+        return None;
+    }
+    let run = run_of(state.select?);
+    let root = m.roots.get(run.f)?.as_ref()?;
+    let src = run.source(root, &m.lines[run.f])?.to_string();
+    let view = view_of(state);
+    let picture = picture_of(&src, view);
+    let mut words = list(state, "part_words");
+    let units = {
+        let mut u = vec![String::new()];
+        u.extend(list(state, "part_units"));
+        u
+    };
+    let unit_choices = |on: &str| -> Vec<Choice> {
+        units
+            .iter()
+            .map(|u| Choice {
+                id: u.clone(),
+                label: if u.is_empty() {
+                    s(state, "unit_none")
+                } else {
+                    u.clone()
+                },
+                on: u == on,
+            })
+            .collect()
+    };
+    let kinds: Vec<String> = ["none", "drag", "slider", "type"]
+        .iter()
+        .map(|k| k.to_string())
+        .collect();
+    let Some(ci) = selected_concept(state, m) else {
+        return Some(Card {
+            picture,
+            num: 0,
+            name: String::new(),
+            colour: String::new(),
+            sample: String::new(),
+            words: {
+                // a new part starts on no word, so a wrong one is not suggested
+                let mut w = vec![Choice {
+                    id: String::new(),
+                    label: s(state, "card_pick"),
+                    on: true,
+                }];
+                w.extend(choices(state, &words, None, ""));
+                w
+            },
+            units: unit_choices(""),
+            number: false,
+            controls: vec![],
+            min: String::new(),
+            max: String::new(),
+            step: String::new(),
+            say: String::new(),
+            sentence_words: String::new(),
+            features: vec![],
+        });
+    };
+    let c = &m.sheet.concepts[ci];
+    if !words.contains(&c.name) {
+        words.push(c.name.clone());
+    }
+    let p = paint(view, c);
+    let (min, max, step) = c
+        .control
+        .as_ref()
+        .map(|k| (num_text(k.min), num_text(k.max), num_text(k.step)))
+        .unwrap_or_default();
+    let number = m.occs.iter().any(|o| o.concept == ci && o.len == 1);
+    let sentence_words = sheetedit::links(&state.doc.prose)
+        .into_iter()
+        .find(|(_, id)| *id == c.id)
+        .map(|(w, _)| w)
+        .unwrap_or_default();
+    Some(Card {
+        picture,
+        num: c.num,
+        name: c.name.clone(),
+        colour: p.text.into(),
+        sample: pattern_sample(c.pattern, p.text),
+        words: choices(state, &words, None, &c.name),
+        units: unit_choices(&c.unit),
+        number,
+        controls: if number {
+            choices(state, &kinds, Some("control_"), control_kind(c))
+        } else {
+            vec![]
+        },
+        min,
+        max,
+        step,
+        say: c.say.clone(),
+        sentence_words,
+        features: features(state, m, ci)
+            .into_iter()
+            .filter(|f| f.id != "scrub" && f.id != "slider" && f.id != "space")
+            .collect(),
+    })
+}
+
+fn part_chips(state: &State, m: &Model) -> Vec<PartChip> {
+    let on = selected_concept(state, m);
+    m.sheet
+        .concepts
+        .iter()
+        .enumerate()
+        .map(|(ci, c)| PartChip {
+            num: c.num,
+            name: c.name.clone(),
+            colour: paint(view_of(state), c).text.into(),
+            on: on == Some(ci),
+            missing: !m.occs.iter().any(|o| o.concept == ci),
+        })
+        .collect()
+}
+
+/// The tile cursor: where the student put it, or else the end of the first
+/// line, so the keys work before anything is tapped.
+fn cursor_of(state: &State, m: &Model) -> Option<(usize, Cursor)> {
+    if state.role == "explore" {
+        return None;
+    }
+    match state.tiles.as_ref() {
+        Some((line, text)) => Some((*line, Cursor::read(text)?)),
+        None => {
+            let t = tiles::from_line(m.lines.first()?)?;
+            Some((
+                0,
+                Cursor {
+                    path: vec![],
+                    pos: t.len(),
+                },
+            ))
+        }
+    }
+}
+
+/// The keys on the keypad: (id, face, label key, group). The id is what
+/// `tiles.key` takes.
+fn key_table(state: &State) -> Vec<(String, String, String, &'static str)> {
+    let mut out: Vec<(String, String, String, &'static str)> = Vec::new();
+    for d in ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "."] {
+        out.push((d.into(), d.into(), d.into(), "digit"));
+    }
+    for (id, sym) in [
+        ("+", "+"),
+        ("-", "-"),
+        ("*", "\\times"),
+        ("div", "\\div"),
+        ("=", "="),
+    ] {
+        out.push((id.into(), tiles::face(sym), tiles::face(sym), "op"));
+    }
+    for id in ["frac", "pow", "paren", "letters", "left", "right", "back"] {
+        out.push((
+            id.into(),
+            s(state, &format!("face_{id}")),
+            s(state, &format!("key_{id}")),
+            "do",
+        ));
+    }
+    if state.letters {
+        for c in 'a'..='z' {
+            out.push((c.to_string(), c.to_string(), c.to_string(), "letter"));
+        }
+        out.push(("ell".into(), tiles::face("\\ell"), tiles::face("\\ell"), "letter"));
+    }
+    out
+}
+
+fn key_of(id: &str) -> Option<Key<'_>> {
+    match id {
+        "div" => Some(Key::Op("\\div")),
+        "ell" => Some(Key::Put("\\ell")),
+        "frac" => Some(Key::Frac),
+        "pow" => Some(Key::Pow),
+        "paren" => Some(Key::Paren),
+        "left" => Some(Key::Left),
+        "right" => Some(Key::Right),
+        "back" => Some(Key::Back),
+        other => Key::from_typed(other),
+    }
+}
+
+fn tiles_ui(state: &State, m: &Model) -> (Vec<TileLine>, Vec<KeyUi>) {
+    let cur = cursor_of(state, m);
+    let label = s(state, "tiles_box");
+    let lines: Vec<TileLine> = m
+        .lines
+        .iter()
+        .enumerate()
+        .map(|(i, src)| match tiles::from_line(src) {
+            Some(t) => TileLine {
+                html: tiles::html(
+                    &t,
+                    i,
+                    cur.as_ref().filter(|(l, _)| *l == i).map(|(_, c)| c),
+                    &label,
+                ),
+                editable: true,
+                on: cur.as_ref().map(|(l, _)| *l == i).unwrap_or(false),
+            },
+            None => TileLine {
+                html: String::new(),
+                editable: false,
+                on: false,
+            },
+        })
+        .collect();
+    let line_tiles = cur
+        .as_ref()
+        .and_then(|(l, c)| Some((tiles::from_line(m.lines.get(*l)?)?, c.clone())));
+    let keys = key_table(state)
+        .into_iter()
+        .map(|(id, face, label, group)| {
+            let on = match (&line_tiles, id.as_str()) {
+                (_, "letters") => true,
+                (Some((t, c)), _) => key_of(&id).and_then(|k| press_line(t, c, k)).is_some(),
+                (None, _) => false,
+            };
+            KeyUi {
+                id,
+                face,
+                label,
+                on,
+                group: group.into(),
+            }
+        })
+        .collect();
+    (lines, keys)
+}
+
+/// A key on a line, refusing a key that would leave the line empty: a line
+/// is removed with its own button, not by deleting its last tile.
+fn press_line(t: &[tiles::Tile], c: &Cursor, k: Key) -> Option<(Vec<tiles::Tile>, Cursor)> {
+    tiles::press(t, c, k).filter(|(after, _)| !after.is_empty())
+}
+
+const VERBS: [&str; 5] = ["show", "spotlight", "cross", "hide", "set"];
+
+fn verb_of(line: &str) -> &'static str {
+    match line.split_whitespace().next() {
+        Some("formula") => "show",
+        Some("focus") => "spotlight",
+        Some("strike") => "cross",
+        Some("hide") => "hide",
+        Some("set") => "set",
+        _ => "other",
+    }
+}
+
+fn keyword_of(verb: &str) -> &'static str {
+    match verb {
+        "show" => "formula",
+        "spotlight" => "focus",
+        "cross" => "strike",
+        "hide" => "hide",
+        _ => "set",
+    }
+}
+
+/// The step blocks, one line per block: a line naming several parts
+/// becomes one block for each.
+fn step_blocks(sheet: &str) -> Vec<StepText> {
+    sheetedit::steps(sheet)
+        .into_iter()
+        .map(|st| StepText {
+            caption: st.caption,
+            lines: st
+                .lines
+                .iter()
+                .flat_map(|l| {
+                    let mut w = l.split_whitespace();
+                    let first = w.next().unwrap_or("");
+                    if matches!(first, "focus" | "strike" | "hide") {
+                        w.map(|n| format!("{first} {}", n.trim_matches(',')))
+                            .collect::<Vec<_>>()
+                    } else {
+                        vec![l.clone()]
+                    }
+                })
+                .collect(),
+        })
+        .collect()
+}
+
+fn block_args(state: &State, m: &Model, verb: &str) -> Vec<Choice> {
+    match verb {
+        "show" => (1..=m.lines.len())
+            .map(|n| Choice {
+                id: n.to_string(),
+                label: fill(&s(state, "block_line"), &[("n", n.to_string())]),
+                on: false,
+            })
+            .collect(),
+        "set" => m
+            .sheet
+            .concepts
+            .iter()
+            .filter(|c| c.control.is_some())
+            .map(|c| Choice {
+                id: c.value_name(),
+                label: c.name.clone(),
+                on: false,
+            })
+            .collect(),
+        "other" => vec![],
+        _ => m
+            .sheet
+            .concepts
+            .iter()
+            .map(|c| Choice {
+                id: c.id.clone(),
+                label: c.name.clone(),
+                on: false,
+            })
+            .collect(),
+    }
+}
+
+fn blocks_ui(state: &State, m: &Model, current: Option<usize>) -> Vec<BlockStep> {
+    step_blocks(&state.doc.sheet)
+        .into_iter()
+        .enumerate()
+        .map(|(i, st)| BlockStep {
+            caption: st.caption,
+            on: current == Some(i),
+            acts: st
+                .lines
+                .iter()
+                .map(|l| {
+                    let verb = verb_of(l);
+                    let words: Vec<&str> = l.split_whitespace().collect();
+                    let arg = words.get(1).map(|w| w.to_string()).unwrap_or_default();
+                    let arg = if verb == "set" {
+                        crate::tex::parse(&arg)
+                            .map(|n| crate::tex::canon(&n))
+                            .unwrap_or(arg)
+                    } else {
+                        arg
+                    };
+                    let args = block_args(state, m, verb)
+                        .into_iter()
+                        .map(|c| Choice { on: c.id == arg, ..c })
+                        .collect();
+                    BlockAct {
+                        verb: verb.into(),
+                        label: s(state, &format!("verb_{verb}")),
+                        arg: if verb == "other" { String::new() } else { arg },
+                        args,
+                        value: if verb == "set" {
+                            words.get(3).map(|w| w.to_string()).unwrap_or_default()
+                        } else {
+                            String::new()
+                        },
+                        value_too: verb == "set",
+                    }
+                })
+                .collect(),
+        })
+        .collect()
 }
 
 fn ui(state: State, hints: Vec<Hint>, out: Option<Out>) -> Ui {
@@ -465,10 +1070,10 @@ fn ui(state: State, hints: Vec<Hint>, out: Option<Out>) -> Ui {
         .collect();
     let selection = state
         .select
-        .and_then(|(f, id)| {
-            let root = m.roots.get(f)?.as_ref()?;
-            let n = root.find(id)?;
-            m.lines[f].get(n.span.0..n.span.1).map(String::from)
+        .and_then(|sel| {
+            let run = run_of(sel);
+            let root = m.roots.get(run.f)?.as_ref()?;
+            run.source(root, &m.lines[run.f]).map(String::from)
         })
         .unwrap_or_default();
     let views = View::ALL
@@ -482,22 +1087,46 @@ fn ui(state: State, hints: Vec<Hint>, out: Option<Out>) -> Ui {
     let examples = state
         .examples
         .iter()
+        .filter(|e| state.role == "teach" || e.group == "shelf")
         .map(|e| Choice {
             id: e.id.clone(),
             label: e.label.clone(),
             on: e.doc == state.doc,
         })
         .collect();
+    let (tiles, keys) = tiles_ui(&state, &m);
+    let roles = ROLES
+        .iter()
+        .map(|r| Choice {
+            id: r.to_string(),
+            label: s(&state, &format!("role_{r}")),
+            on: state.role == *r,
+        })
+        .collect();
+    let verbs = choices(
+        &state,
+        &VERBS.iter().map(|v| v.to_string()).collect::<Vec<_>>(),
+        Some("verb_"),
+        "",
+    );
+    // a student cannot read or fix a sheet line, so outside the Teacher mode
+    // the errors are left to the teacher, apart from a missing part (shown
+    // on its chip)
+    let errors = if state.role == "teach" {
+        m.errors.clone()
+    } else {
+        vec![]
+    };
     Ui {
         mode: state.mode.clone(),
-        strings: state.strings.clone(),
+        strings: strings_for(&state),
         hints,
         doc: state.doc.clone(),
         fragment: export::fragment(&state.doc),
         view: view.name().into(),
         views,
         examples,
-        errors: m.errors.clone(),
+        errors,
         formula_svg,
         plot_svg,
         plot_error,
@@ -512,6 +1141,18 @@ fn ui(state: State, hints: Vec<Hint>, out: Option<Out>) -> Ui {
         export_clear: state.export_clear,
         selection,
         out,
+        role: state.role.clone(),
+        roles,
+        shows: shows(&state),
+        code: state.code,
+        card: card(&state, &m),
+        parts: part_chips(&state, &m),
+        tiles,
+        keys,
+        letters: state.letters,
+        blocks: blocks_ui(&state, &m, lk.step),
+        verbs,
+        sentence: sheetedit::plain(&state.doc.prose),
         state,
     }
 }
@@ -534,7 +1175,13 @@ pub fn start(strings_json: &str, examples_json: &str, glossary_md: &str, mode: &
         let strings = page::parse_strings(strings_json).map_err(|e| e.message())?;
         let examples: Vec<Example> = serde_json::from_str(examples_json)
             .map_err(|e| format!("The examples file could not be read: {e}"))?;
-        let first = examples.first().ok_or("The examples file has no examples.")?;
+        let role = if mode == "embed" { "explore" } else { "build" };
+        // a student starts on the shelf; the teacher's examples come after
+        let first = examples
+            .iter()
+            .find(|e| e.group == "shelf")
+            .or(examples.first())
+            .ok_or("The examples file has no examples.")?;
         let hints = hints_from(glossary_md)?;
         let state = State {
             mode: if mode == "embed" {
@@ -542,6 +1189,10 @@ pub fn start(strings_json: &str, examples_json: &str, glossary_md: &str, mode: &
             } else {
                 "edit".into()
             },
+            role: role.into(),
+            code: false,
+            tiles: None,
+            letters: false,
             site: strings.get("site").cloned().unwrap_or_default(),
             strings,
             doc: first.doc.clone(),
@@ -646,22 +1297,6 @@ fn toggle(sheet: &str, line: usize, keyword: &str, add: &str, also_remove: &[&st
         }
     }
     lines.join("\n") + "\n"
-}
-
-/// The nodes a click can select, smallest first: each node that sits in a
-/// row, from the clicked glyph outward (the paper's R10: snap to meaningful
-/// expressions, not glyphs).
-fn selectable(root: &Node, id: usize) -> Vec<usize> {
-    let path = root.path_to(id);
-    let mut out = Vec::new();
-    for w in path.windows(2) {
-        let parent = root.find(w[0]);
-        if parent.map(|p| p.k == K::Row).unwrap_or(false) {
-            out.push(w[1]);
-        }
-    }
-    out.reverse();
-    out
 }
 
 fn gif_frames(state: &State, m: &Model) -> Out {
@@ -841,13 +1476,28 @@ pub fn act(state_json: &str, glossary_md: &str, name: &str, value: &str) -> Stri
                     formulas: s(&state, "new_formula"),
                     sheet: String::new(),
                     prose: String::new(),
+                    open: String::new(),
                 };
                 reset(&mut state);
             }
             "doc.fragment" => {
                 state.doc = export::from_fragment(value)?;
+                // a teacher's link says which mode it opens in
+                if state.mode == "edit" && (state.doc.open == "explore" || state.doc.open == "build") {
+                    state.role = state.doc.open.clone();
+                }
+                state.doc.open.clear();
                 reset(&mut state);
             }
+            "role.set" => {
+                if !ROLES.contains(&value) {
+                    return Err(format!("There is no mode \"{value}\"."));
+                }
+                state.role = value.to_string();
+                state.select = None;
+                state.tiles = None;
+            }
+            "code.toggle" => state.code = !state.code,
             "doc.open" => {
                 state.doc = export::from_file(value)?;
                 reset(&mut state);
@@ -858,6 +1508,8 @@ pub fn act(state_json: &str, glossary_md: &str, name: &str, value: &str) -> Stri
             }
             "hover" => state.hover = num_to_index(value),
             "select" => {
+                // formula:node, or formula:node|row:first:len for a tap on a part
+                let (value, part) = value.split_once('|').unwrap_or((value, ""));
                 let (f, id) = value
                     .split_once(':')
                     .and_then(|(a, b)| Some((a.parse::<usize>().ok()?, b.parse::<usize>().ok()?)))
@@ -867,24 +1519,39 @@ pub fn act(state_json: &str, glossary_md: &str, name: &str, value: &str) -> Stri
                     .get(f)
                     .and_then(|r| r.as_ref())
                     .ok_or("There is no such formula.")?;
-                let options = selectable(root, id);
-                let next = match state.select {
-                    Some((sf, sid)) if sf == f => match options.iter().position(|o| *o == sid) {
+                // each tap on the same place selects the next larger part
+                let options = parts::choices(root, f, id);
+                let cur = state.select.map(run_of);
+                let tapped: Option<Run> = {
+                    let n: Vec<usize> = part.split(':').filter_map(|x| x.parse().ok()).collect();
+                    (n.len() == 3).then(|| Run {
+                        f,
+                        row: n[0],
+                        first: n[1],
+                        len: n[2],
+                    })
+                };
+                let next = match (tapped, cur) {
+                    (Some(t), c) if c != Some(t) => Some(t),
+                    _ => match cur.and_then(|c| options.iter().position(|o| *o == c)) {
                         Some(i) => options.get(i + 1).or(options.first()).copied(),
                         None => options.first().copied(),
                     },
-                    _ => options.first().copied(),
                 };
-                state.select = next.map(|n| (f, n));
+                state.select = if state.role == "explore" {
+                    None
+                } else {
+                    next.map(|r| (r.f, r.row, r.first, r.len))
+                };
             }
             "select.clear" => state.select = None,
             "concept.add" => {
-                let (f, id) = state.select.ok_or(s(&state, "no_selection"))?;
-                let root = m.roots[f].as_ref().ok_or("There is no such formula.")?;
-                let n = root
-                    .find(id)
-                    .ok_or("The selection is no longer in the formula.")?;
-                let src = m.lines[f][n.span.0..n.span.1].trim().to_string();
+                let run = run_of(state.select.ok_or(s(&state, "no_selection"))?);
+                let root = m.roots[run.f].as_ref().ok_or("There is no such formula.")?;
+                let src = run
+                    .source(root, &m.lines[run.f])
+                    .ok_or("The selection is no longer in the formula.")?
+                    .to_string();
                 let mut k = m.sheet.concepts.len() + 1;
                 while m.sheet.concept(&format!("idea{k}")).is_some() {
                     k += 1;
@@ -927,6 +1594,336 @@ pub fn act(state_json: &str, glossary_md: &str, name: &str, value: &str) -> Stri
                     ),
                     other => return Err(format!("A concept has no feature \"{other}\".")),
                 };
+            }
+            "part.make" => {
+                let run = run_of(state.select.ok_or(s(&state, "no_selection"))?);
+                let root = m.roots[run.f].as_ref().ok_or("There is no such formula.")?;
+                let src = run
+                    .source(root, &m.lines[run.f])
+                    .ok_or("The selection is no longer in the formula.")?
+                    .to_string();
+                let word = value.trim();
+                let word = if word.is_empty() {
+                    s(&state, "part_default")
+                } else {
+                    word.to_string()
+                };
+                let taken: Vec<String> = m.sheet.concepts.iter().map(|c| c.id.clone()).collect();
+                let id = sheetedit::slug(&word, &taken);
+                let mut sheet = state.doc.sheet.trim_end().to_string();
+                if !sheet.is_empty() {
+                    sheet += "\n";
+                }
+                sheet += &format!("concept {id}: {src}\n");
+                if word != id {
+                    sheet += &format!("  name {word}\n");
+                }
+                sheet += "  label above\n";
+                state.doc.sheet = sheet;
+            }
+            "part.pick" => {
+                let ci = num_to_index(value).ok_or("There is no such part.")?;
+                let o = m
+                    .occs
+                    .iter()
+                    .find(|o| o.concept == ci)
+                    .ok_or(s(&state, "part_missing"))?;
+                state.select = Some((o.formula, o.row, o.first, o.len));
+            }
+            "part.name" | "part.unit" | "part.say" | "part.words" | "part.control" | "part.range" => {
+                let (num, rest) = value
+                    .split_once('|')
+                    .ok_or("A part change is written number|value.")?;
+                let ci = num_to_index(num).ok_or("There is no such part.")?;
+                let c = &m.sheet.concepts[ci];
+                let rest = rest.trim();
+                let sheet = &state.doc.sheet;
+                state.doc.sheet = match name {
+                    "part.name" => {
+                        let line = (!rest.is_empty() && rest != c.id).then(|| format!("name {rest}"));
+                        sheetedit::set_line(sheet, c.line, "name", line.as_deref(), &[])
+                    }
+                    "part.unit" => {
+                        let line = (!rest.is_empty()).then(|| format!("unit {rest}"));
+                        sheetedit::set_line(sheet, c.line, "unit", line.as_deref(), &[])
+                    }
+                    "part.say" => {
+                        let line = (!rest.is_empty()).then(|| format!("say {rest}"));
+                        sheetedit::set_line(sheet, c.line, "say", line.as_deref(), &[])
+                    }
+                    "part.words" => {
+                        state.doc.prose = sheetedit::link(&state.doc.prose, rest, &c.id);
+                        sheet.clone()
+                    }
+                    "part.control" => {
+                        let (lo, hi, st, v) = c
+                            .control
+                            .as_ref()
+                            .map(|k| (k.min, k.max, k.step, k.value))
+                            .unwrap_or((
+                                Fx(0),
+                                Fx::parse("10").unwrap_or(Fx(0)),
+                                Fx::parse("1").unwrap_or(Fx(0)),
+                                Fx::parse("1").unwrap_or(Fx(0)),
+                            ));
+                        let range = format!(
+                            "{} .. {} step {} = {}",
+                            num_text(lo),
+                            num_text(hi),
+                            num_text(st),
+                            num_text(v)
+                        );
+                        let line = match rest {
+                            "none" => None,
+                            "drag" => Some(format!("scrub {range}")),
+                            "slider" => Some(format!("slider {range}")),
+                            "type" => Some(format!("edit {}", num_text(v))),
+                            other => return Err(format!("A part has no control \"{other}\".")),
+                        };
+                        let all = ["scrub", "slider", "edit", "limit"];
+                        let s1 = sheetedit::set_line(sheet, c.line, "scrub", None, &all);
+                        match line {
+                            Some(l) => sheetedit::set_line(
+                                &s1,
+                                c.line,
+                                l.split(' ').next().unwrap_or(""),
+                                Some(&l),
+                                &[],
+                            ),
+                            None => s1,
+                        }
+                    }
+                    _ => {
+                        // part.range: min|max|step, keeping the control's kind and value
+                        let nums: Vec<Option<Fx>> = rest.split('|').map(|x| Fx::parse(x.trim())).collect();
+                        let (Some(Some(lo)), Some(Some(hi)), Some(Some(st))) =
+                            (nums.first(), nums.get(1), nums.get(2))
+                        else {
+                            return Err(s(&state, "range_bad"));
+                        };
+                        if hi <= lo || st.0 <= 0 {
+                            return Err(s(&state, "range_bad"));
+                        }
+                        let k = c.control.as_ref().ok_or(s(&state, "range_bad"))?;
+                        let v = k.value.max(*lo).min(*hi);
+                        let word = match k.kind {
+                            ControlKind::Scrub => "scrub",
+                            ControlKind::Slider => "slider",
+                            ControlKind::Edit => return Err(s(&state, "range_bad")),
+                        };
+                        let l = format!(
+                            "{word} {} .. {} step {} = {}",
+                            num_text(*lo),
+                            num_text(*hi),
+                            num_text(*st),
+                            num_text(v)
+                        );
+                        state.overrides.retain(|(n, _)| *n != c.value_name());
+                        sheetedit::set_line(sheet, c.line, word, Some(&l), &[])
+                    }
+                };
+            }
+            "prose.plain" => {
+                let keep = sheetedit::links(&state.doc.prose);
+                state.doc.prose = sheetedit::relink(value, &keep);
+            }
+            "tiles.at" => {
+                let (line, cur) = value
+                    .split_once('|')
+                    .ok_or("A tile place is written line|cursor.")?;
+                let line: usize = line.parse().map_err(|_| "A tile line is a number.")?;
+                let cur = Cursor::read(cur).ok_or("That is not a place in the tiles.")?;
+                if line >= m.lines.len() {
+                    return Err("There is no such line.".into());
+                }
+                state.tiles = Some((line, cur.write()));
+            }
+            "tiles.key" => {
+                if value == "letters" {
+                    state.letters = !state.letters;
+                } else if let Some((line, cur)) = cursor_of(&state, &m) {
+                    let t = m
+                        .lines
+                        .get(line)
+                        .and_then(|l| tiles::from_line(l))
+                        .ok_or(s(&state, "tiles_locked"))?;
+                    if let Some((after, c)) = key_of(value).and_then(|k| press_line(&t, &cur, k)) {
+                        let mut lines = m.lines.clone();
+                        lines[line] = tiles::to_latex(&after);
+                        state.doc.formulas = lines.join("\n");
+                        state.tiles = Some((line, c.write()));
+                        state.overrides.clear();
+                        state.select = None;
+                    }
+                }
+            }
+            "tiles.add_line" | "tiles.remove_line" => {
+                let at = cursor_of(&state, &m)
+                    .map(|(l, _)| l)
+                    .unwrap_or(m.lines.len().saturating_sub(1));
+                let mut lines = m.lines.clone();
+                if name == "tiles.add_line" {
+                    // the next line starts as a copy, to change one move at a time
+                    let copy = lines.get(at).cloned().unwrap_or_else(|| s(&state, "new_formula"));
+                    lines.insert((at + 1).min(lines.len()), copy.clone());
+                    let end = tiles::from_line(&copy).map(|t| t.len()).unwrap_or(0);
+                    state.tiles = Some((
+                        at + 1,
+                        Cursor {
+                            path: vec![],
+                            pos: end,
+                        }
+                        .write(),
+                    ));
+                } else if lines.len() > 1 {
+                    lines.remove(at.min(lines.len() - 1));
+                    state.tiles = None;
+                } else {
+                    return Err(s(&state, "line_last"));
+                }
+                state.doc.formulas = lines.join("\n");
+                state.select = None;
+            }
+            "tiles.done" => state.tiles = None,
+            "blocks.add_step" | "blocks.remove_step" | "blocks.caption" | "blocks.move_step"
+            | "blocks.add" | "blocks.remove" | "blocks.arg" | "blocks.value" | "blocks.move" => {
+                let mut st = step_blocks(&state.doc.sheet);
+                let parts: Vec<&str> = value.split('|').collect();
+                let n = |k: usize| -> Result<usize, String> {
+                    parts
+                        .get(k)
+                        .and_then(|x| x.trim().parse::<usize>().ok())
+                        .ok_or("A block place is a number.".into())
+                };
+                let at_step = |i: usize, st: &Vec<StepText>| -> Result<(), String> {
+                    if i < st.len() {
+                        Ok(())
+                    } else {
+                        Err("There is no such step.".into())
+                    }
+                };
+                match name {
+                    "blocks.add_step" => {
+                        let caption = fill(&s(&state, "new_step"), &[("n", (st.len() + 1).to_string())]);
+                        st.push(StepText {
+                            caption,
+                            lines: vec![format!("formula {}", m.lines.len().max(1))],
+                        });
+                    }
+                    "blocks.remove_step" => {
+                        let i = n(0)?;
+                        at_step(i, &st)?;
+                        st.remove(i);
+                        state.step = None;
+                    }
+                    "blocks.caption" => {
+                        let i = n(0)?;
+                        at_step(i, &st)?;
+                        let text = parts[1..].join("|");
+                        let text = text.trim();
+                        st[i].caption = if text.is_empty() {
+                            fill(&s(&state, "new_step"), &[("n", (i + 1).to_string())])
+                        } else {
+                            text.to_string()
+                        };
+                    }
+                    "blocks.move_step" => {
+                        // i|j, or i|up and i|down from the arrows
+                        let i = n(0)?;
+                        let j = match parts.get(1).copied() {
+                            Some("up") => i.saturating_sub(1),
+                            Some("down") => (i + 1).min(st.len().saturating_sub(1)),
+                            _ => n(1)?,
+                        };
+                        at_step(i, &st)?;
+                        at_step(j, &st)?;
+                        let item = st.remove(i);
+                        st.insert(j, item);
+                    }
+                    "blocks.add" => {
+                        let i = n(0)?;
+                        at_step(i, &st)?;
+                        let verb = parts.get(1).copied().unwrap_or("");
+                        let args = block_args(&state, &m, verb);
+                        let first = args.first().ok_or(s(&state, "block_no_parts"))?;
+                        let line = match verb {
+                            "show" => format!(
+                                "formula {}",
+                                args.last().map(|a| a.id.clone()).unwrap_or_default()
+                            ),
+                            "set" => {
+                                let v = m
+                                    .values(&[], None)
+                                    .into_iter()
+                                    .find(|(x, _)| *x == first.id)
+                                    .map(|(_, v)| num_text(v))
+                                    .unwrap_or_else(|| "1".into());
+                                format!("set {} = {v}", first.id)
+                            }
+                            "spotlight" | "cross" | "hide" => format!("{} {}", keyword_of(verb), first.id),
+                            other => return Err(format!("There is no block \"{other}\".")),
+                        };
+                        st[i].lines.push(line);
+                    }
+                    "blocks.remove" | "blocks.arg" | "blocks.value" => {
+                        let (i, j) = (n(0)?, n(1)?);
+                        at_step(i, &st)?;
+                        let line = st[i].lines.get(j).cloned().ok_or("There is no such block.")?;
+                        let verb = verb_of(&line);
+                        let words: Vec<&str> = line.split_whitespace().collect();
+                        let given = parts.get(2).copied().unwrap_or("").trim();
+                        match name {
+                            "blocks.remove" => {
+                                st[i].lines.remove(j);
+                            }
+                            "blocks.arg" => {
+                                if !block_args(&state, &m, verb).iter().any(|a| a.id == given) {
+                                    return Err("That block cannot take that.".into());
+                                }
+                                st[i].lines[j] = if verb == "set" {
+                                    format!("set {given} = {}", words.get(3).copied().unwrap_or("1"))
+                                } else {
+                                    format!("{} {given}", keyword_of(verb))
+                                };
+                            }
+                            _ => {
+                                let v = Fx::parse(given).ok_or(format!("{given} is not a number."))?;
+                                if verb != "set" {
+                                    return Err("Only a set block takes a number.".into());
+                                }
+                                st[i].lines[j] =
+                                    format!("set {} = {}", words.get(1).copied().unwrap_or(""), num_text(v));
+                            }
+                        }
+                    }
+                    _ => {
+                        // blocks.move: from step i, block j, to step k, before
+                        // block l; or i|j|up and i|j|down from the arrows,
+                        // which cross into the step before or after at an end
+                        let (i, j) = (n(0)?, n(1)?);
+                        at_step(i, &st)?;
+                        let (k, l) = match parts.get(2).copied() {
+                            Some("up") if j > 0 => (i, j - 1),
+                            Some("up") if i > 0 => (i - 1, st[i - 1].lines.len()),
+                            Some("up") => (i, j),
+                            Some("down") if j + 1 < st[i].lines.len() => (i, j + 2),
+                            Some("down") if i + 1 < st.len() => (i + 1, 0),
+                            Some("down") => (i, j + 1),
+                            _ => (n(2)?, n(3)?),
+                        };
+                        at_step(i, &st)?;
+                        at_step(k, &st)?;
+                        if j >= st[i].lines.len() {
+                            return Err("There is no such block.".into());
+                        }
+                        let line = st[i].lines.remove(j);
+                        let l = if i == k && l > j { l - 1 } else { l };
+                        let l = l.min(st[k].lines.len());
+                        st[k].lines.insert(l, line);
+                    }
+                }
+                state.doc.sheet = sheetedit::write_steps(&state.doc.sheet, &st);
+                state.playing = false;
             }
             "concept.mute" => {
                 let ci = num_to_index(value).ok_or("There is no such concept.")?;
@@ -1139,7 +2136,17 @@ pub fn act(state_json: &str, glossary_md: &str, name: &str, value: &str) -> Stri
                 out = Some(text_out("copy", "embed".into(), "text/html", t));
             }
             "export.link" => {
-                let t = format!("{}{}", state.site, export::fragment(&state.doc));
+                // a link a student shares opens for reading; a teacher picks
+                let open = match (state.role.as_str(), value) {
+                    ("teach", "build") => "build",
+                    ("teach", "") => "",
+                    _ => "explore",
+                };
+                let doc = Doc {
+                    open: open.into(),
+                    ..state.doc.clone()
+                };
+                let t = format!("{}{}", state.site, export::fragment(&doc));
                 out = Some(text_out("copy", "link".into(), "text/plain", t));
             }
             "export.json" => {
@@ -1162,6 +2169,7 @@ pub fn act(state_json: &str, glossary_md: &str, name: &str, value: &str) -> Stri
 }
 
 fn reset(state: &mut State) {
+    state.tiles = None;
     state.step = None;
     state.hover = None;
     state.select = None;
@@ -1323,6 +2331,285 @@ mod tests {
         let frag = v["ok"]["fragment"].as_str().unwrap().to_string();
         let back = step(&step(&v, "doc.new", ""), "doc.fragment", &frag);
         assert_eq!(back["ok"]["doc"]["title"], "A line");
+    }
+
+    fn sheet(v: &serde_json::Value) -> String {
+        v["ok"]["doc"]["sheet"].as_str().unwrap().to_string()
+    }
+
+    fn shows(v: &serde_json::Value) -> Vec<String> {
+        serde_json::from_value(v["ok"]["shows"].clone()).unwrap()
+    }
+
+    #[test]
+    fn the_code_shows_only_in_the_teacher_mode_with_its_switch_on() {
+        let v = begin();
+        assert_eq!(v["ok"]["role"], "build", "the editor opens for a student");
+        assert!(!shows(&v).contains(&"code".to_string()));
+        assert!(shows(&v).contains(&"tiles".to_string()));
+        let t = step(&v, "role.set", "teach");
+        assert!(!shows(&t).contains(&"code".to_string()), "the switch starts off");
+        let t = step(&t, "code.toggle", "");
+        assert!(shows(&t).contains(&"code".to_string()));
+        let e = step(&t, "role.set", "explore");
+        assert_eq!(shows(&e), ["reader", "roles"], "Explore is the reader alone");
+        assert_eq!(
+            step(&v, "role.set", "admin")["error"],
+            "There is no mode \"admin\"."
+        );
+    }
+
+    #[test]
+    fn a_student_mode_reads_the_kid_word_where_one_exists() {
+        let strings = strings().replacen('{', "{\"kid_concepts\": \"Parts\",", 1);
+        let v = json(&start(&strings, EXAMPLES, "", "edit"));
+        assert_eq!(v["ok"]["strings"]["concepts"], "Parts");
+        let t = step(&v, "role.set", "teach");
+        assert_eq!(t["ok"]["strings"]["concepts"], "concepts");
+        let more = super::tests::strings().replacen(
+            '{',
+            "{\"kid_intro\": \"Build\", \"explore_intro\": \"Read\",",
+            1,
+        );
+        let v = json(&start(&more, EXAMPLES, "", "edit"));
+        assert_eq!(v["ok"]["strings"]["intro"], "Build");
+        assert_eq!(step(&v, "role.set", "explore")["ok"]["strings"]["intro"], "Read");
+        assert_eq!(step(&v, "role.set", "teach")["ok"]["strings"]["intro"], "intro");
+    }
+
+    #[test]
+    fn explore_refuses_a_selection_and_shows_no_card() {
+        let v = step(&step(&begin(), "role.set", "explore"), "select", "0:3");
+        assert_eq!(v["ok"]["selection"], "");
+        assert_eq!(v["ok"]["card"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn a_card_makes_a_part_and_each_sentence_writes_one_line() {
+        // y = m x + b: x is node 4
+        let v = step(&begin(), "select", "0:4");
+        assert_eq!(v["ok"]["card"]["num"], 0, "x is not a part yet");
+        assert_eq!(
+            v["ok"]["card"]["words"][0]["id"], "",
+            "no word is suggested for a new part"
+        );
+        let v = step(&v, "part.make", "time");
+        assert!(
+            sheet(&v).ends_with("concept time: x\n  label above\n"),
+            "{}",
+            sheet(&v)
+        );
+        assert_eq!(v["ok"]["card"]["num"], 3, "x is the third part");
+        let v = step(&v, "part.unit", "3|s");
+        let v = step(&v, "part.control", "3|slider");
+        assert!(
+            sheet(&v).ends_with("concept time: x\n  label above\n  unit s\n  slider 0 .. 10 step 1 = 1\n"),
+            "{}",
+            sheet(&v)
+        );
+        let slider = v["ok"]["controls"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["name"] == "x")
+            .unwrap()
+            .clone();
+        assert_eq!(slider["shown"], "1 s", "the readout carries the unit");
+        let v = step(&v, "part.range", "3|2|8|2");
+        assert!(
+            sheet(&v).contains("  slider 2 .. 8 step 2 = 2\n"),
+            "the value 1 is raised to the new least, 2"
+        );
+        assert_eq!(step(&v, "part.range", "3|8|2|1")["error"], "range_bad");
+        let v = step(&v, "part.control", "3|none");
+        assert!(
+            sheet(&v).ends_with("concept time: x\n  label above\n  unit s\n"),
+            "the slider goes; the intercept keeps its own"
+        );
+        let v = step(&v, "part.name", "3|time taken");
+        assert!(
+            sheet(&v).ends_with("  unit s\n  name time taken\n"),
+            "{}",
+            sheet(&v)
+        );
+        let v = step(&v, "part.words", "3|tilts");
+        assert_eq!(v["ok"]["doc"]["prose"], "The [slope](slope) [tilts](time) it.");
+        assert_eq!(v["ok"]["sentence"], "The slope tilts it.");
+        let v = step(&v, "prose.plain", "The slope tilts it a lot.");
+        assert_eq!(
+            v["ok"]["doc"]["prose"],
+            "The [slope](slope) [tilts](time) it a lot."
+        );
+    }
+
+    #[test]
+    fn a_tap_on_a_part_of_several_symbols_selects_it_whole() {
+        // y = m x + b with a part "m x" (row 0, siblings 2 and 3); the tap
+        // lands on m (node 3), and the part comes first, then larger ones
+        let v = step(&begin(), "doc.sheet", "concept term: m x\n");
+        let v = step(&v, "select", "0:3|0:2:2");
+        assert_eq!(v["ok"]["selection"], "m x");
+        assert_eq!(v["ok"]["card"]["num"], 1);
+        let v = step(&v, "select", "0:3|0:2:2");
+        assert_eq!(
+            v["ok"]["selection"], "m x + b",
+            "a second tap grows past the part"
+        );
+    }
+
+    #[test]
+    fn a_tap_on_a_part_opens_its_card_and_a_chip_picks_it() {
+        let v = step(&begin(), "select", "0:3");
+        assert_eq!(v["ok"]["card"]["num"], 1, "m is the slope, part 1");
+        assert_eq!(v["ok"]["card"]["number"], true);
+        assert_eq!(v["ok"]["card"]["controls"][1]["on"], true, "the slope is dragged");
+        let v = step(&begin(), "part.pick", "2");
+        assert_eq!(v["ok"]["selection"], "b");
+    }
+
+    #[test]
+    fn keys_write_the_formula_and_a_key_that_does_not_fit_is_off() {
+        // y = m x + b is six tiles; the cursor starts after the last
+        let v = begin();
+        assert!(v["ok"]["tiles"][0]["html"]
+            .as_str()
+            .unwrap()
+            .ends_with("<span class=\"caret\" aria-hidden=\"true\"></span>"));
+        // a selection made before a key is dropped, so it cannot point past the line
+        let v = step(&step(&v, "select", "0:6"), "tiles.key", "back");
+        assert_eq!(v["ok"]["doc"]["formulas"], "y = m x +");
+        assert_eq!(v["ok"]["selection"], "");
+        let v = step(&begin(), "tiles.at", "0|;6");
+        let keys = v["ok"]["keys"].as_array().unwrap().clone();
+        let on = |id: &str| keys.iter().find(|k| k["id"] == id).unwrap()["on"].clone();
+        assert_eq!(on("="), false, "one = to a line");
+        assert_eq!(on("+"), true);
+        let v = step(&step(&v, "tiles.key", "+"), "tiles.key", "2");
+        assert_eq!(v["ok"]["doc"]["formulas"], "y = m x + b + 2");
+        let v = step(&v, "tiles.key", "=");
+        assert_eq!(
+            v["ok"]["doc"]["formulas"], "y = m x + b + 2",
+            "a refused key changes nothing"
+        );
+        let v = step(&v, "tiles.add_line", "");
+        assert_eq!(v["ok"]["doc"]["formulas"], "y = m x + b + 2\ny = m x + b + 2");
+        let v = step(&v, "tiles.remove_line", "");
+        assert_eq!(v["ok"]["doc"]["formulas"], "y = m x + b + 2");
+        assert_eq!(step(&v, "tiles.remove_line", "")["error"], "line_last");
+        // a one-tile line keeps its tile: delete is off there
+        let v = step(&step(&begin(), "tiles.at", "0|;0"), "doc.formulas", "y");
+        let v = step(&step(&v, "tiles.at", "0|;1"), "tiles.key", "back");
+        assert_eq!(
+            v["ok"]["doc"]["formulas"], "y",
+            "a line is removed with its button, not emptied"
+        );
+    }
+
+    #[test]
+    fn blocks_rewrite_the_steps_and_keep_the_rest_of_the_sheet() {
+        // the example's steps: "step one" (empty), "step two" with set b = 3
+        let v = step(&begin(), "blocks.value", "1|0|4");
+        assert!(
+            sheet(&v).ends_with("step one\nstep two\n  set b = 4\n"),
+            "{}",
+            sheet(&v)
+        );
+        let v = step(&v, "blocks.move", "1|0|0|0");
+        assert!(
+            sheet(&v).ends_with("step one\n  set b = 4\nstep two\n"),
+            "{}",
+            sheet(&v)
+        );
+        let v = step(&v, "blocks.add", "1|spotlight");
+        assert!(sheet(&v).ends_with("step two\n  focus slope\n"), "{}", sheet(&v));
+        let v = step(&v, "blocks.arg", "1|0|icpt");
+        assert!(sheet(&v).ends_with("step two\n  focus icpt\n"));
+        let v = step(&v, "blocks.add_step", "");
+        assert!(sheet(&v).ends_with("step new_step\n  formula 1\n"));
+        let v = step(&v, "blocks.move_step", "2|0");
+        assert!(sheet(&v).contains("  limit -1 .. 2\nconcept icpt: b\n  slider -5 .. 5 step 1 = 1\nstep new_step\n  formula 1\nstep one\n"), "{}", sheet(&v));
+        assert_eq!(v["ok"]["blocks"][1]["acts"][0]["label"], "verb_set");
+        assert_eq!(
+            step(&v, "blocks.arg", "1|0|q")["error"],
+            "That block cannot take that."
+        );
+        // steps now: new_step (formula 1), one (set b = 4), two (focus icpt)
+        let v = step(&v, "blocks.move", "1|0|up");
+        assert!(
+            sheet(&v)
+                .ends_with("step new_step\n  formula 1\n  set b = 4\nstep one\nstep two\n  focus icpt\n"),
+            "{}",
+            sheet(&v)
+        );
+        let v = step(&v, "blocks.move", "0|0|down");
+        assert!(
+            sheet(&v).contains("step new_step\n  set b = 4\n  formula 1\nstep one\n"),
+            "{}",
+            sheet(&v)
+        );
+        let v = step(&v, "blocks.move", "0|1|down");
+        assert!(
+            sheet(&v)
+                .ends_with("step new_step\n  set b = 4\nstep one\n  formula 1\nstep two\n  focus icpt\n"),
+            "{}",
+            sheet(&v)
+        );
+        let v = step(&v, "blocks.move_step", "2|up");
+        assert!(
+            sheet(&v).ends_with("step two\n  focus icpt\nstep one\n  formula 1\n"),
+            "{}",
+            sheet(&v)
+        );
+    }
+
+    #[test]
+    fn a_shared_link_opens_in_the_mode_it_names() {
+        let v = step(&begin(), "export.link", "");
+        let link = v["ok"]["out"]["text"].as_str().unwrap().to_string();
+        let frag = &link[link.find('#').unwrap()..];
+        assert_eq!(
+            export::from_fragment(frag).unwrap().open,
+            "explore",
+            "a student's link opens for reading"
+        );
+        let back = step(&begin(), "doc.fragment", frag);
+        assert_eq!(back["ok"]["role"], "explore");
+        assert_eq!(
+            back["ok"]["fragment"].as_str().unwrap(),
+            v["ok"]["fragment"].as_str().unwrap(),
+            "the address keeps no mode"
+        );
+        let t = step(&step(&begin(), "role.set", "teach"), "export.link", "build");
+        let link = t["ok"]["out"]["text"].as_str().unwrap().to_string();
+        assert_eq!(
+            export::from_fragment(&link[link.find('#').unwrap()..])
+                .unwrap()
+                .open,
+            "build"
+        );
+    }
+
+    #[test]
+    fn every_example_builds_cleanly_and_every_shelf_line_opens_as_tiles() {
+        let all: Vec<Example> = serde_json::from_str(include_str!("../../../data/examples.json")).unwrap();
+        assert!(all.iter().filter(|e| e.group == "shelf").count() >= 6);
+        for e in &all {
+            let m = Model::build(&e.doc);
+            assert!(m.errors.is_empty(), "{}: {:?}", e.id, m.errors);
+            for c in &m.sheet.concepts {
+                assert!(
+                    m.occs.iter().any(|o| m.sheet.concepts[o.concept].id == c.id),
+                    "{}: {} marks nothing",
+                    e.id,
+                    c.id
+                );
+            }
+            if e.group == "shelf" {
+                for l in &m.lines {
+                    assert!(tiles::from_line(l).is_some(), "{}: {l} has no tiles", e.id);
+                }
+            }
+        }
     }
 
     #[test]

@@ -42,6 +42,7 @@ Agreed 2026-10-28 (journal entry `2026-10-28-agreed`; reasons in the journal's o
 - FB-11: the build fails when the gzipped site passes the size budget in `scripts/build.sh`.
 - FB-12: 2D images are TikZ.
 - FB-14: cite Head, Xie and Hearst (CHI '22, doi:10.1145/3491102.3501932) in the README and the about panel; copy none of its figures.
+- FB-15 (agreed 2026-10-28, journal `2026-10-28-kids-agreed`): the Explore and Build modes show no LaTeX and no sheet; the code shows only in the Teacher mode with its switch on. A key on the tiles goes in only where it fits. `the_code_shows_only_in_the_teacher_mode_with_its_switch_on`, `a_key_that_does_not_fit_is_refused`, and the browser check.
 - Publishing to `sgilson7/formula-builder` is granted (DECISIONS.md, 2026-10-28).
 
 ## Stopping

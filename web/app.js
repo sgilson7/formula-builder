@@ -25,6 +25,9 @@ let scrubbing = false;
 let moved = false;
 let focusedScrub = "";
 let controlShape = "";
+// what each panel was last drawn from, so a redraw for a hover does not
+// rebuild a card or a block a student is typing in
+const drawnFrom = {};
 
 function call(name, value) {
   return JSON.parse(act(JSON.stringify(state), glossary, name, value === undefined ? "" : value));
@@ -73,17 +76,228 @@ function badge(num, colour) {
   return b;
 }
 
-function drawViews() {
-  const box = el("views");
+function changed(key, value) {
+  const text = JSON.stringify(value);
+  if (drawnFrom[key] === text) return false;
+  drawnFrom[key] = text;
+  return true;
+}
+
+function drawPanels() {
+  document.querySelectorAll("[data-panel]").forEach((node) => {
+    node.hidden = !ui.shows.includes(node.dataset.panel);
+  });
+}
+
+function segmented(box, choices, action) {
   box.replaceChildren(
-    ...ui.views.map((v) => {
+    ...choices.map((v) => {
       const b = make("button", v.on ? "on" : "", v.label);
       b.type = "button";
       b.setAttribute("aria-pressed", v.on ? "true" : "false");
-      b.addEventListener("click", () => send("view.set", v.id));
+      b.addEventListener("click", () => send(action, v.id));
       return b;
     })
   );
+}
+
+function menu(choices, onPick, label) {
+  const sel = make("select");
+  if (label) sel.setAttribute("aria-label", label);
+  choices.forEach((c) => {
+    const o = make("option", "", c.label);
+    o.value = c.id;
+    o.selected = c.on;
+    sel.append(o);
+  });
+  sel.addEventListener("change", () => onPick(sel.value));
+  return sel;
+}
+
+function field(value, onSet, label, type, hint) {
+  const input = make("input");
+  input.type = type || "text";
+  input.value = value;
+  if (hint) input.placeholder = hint;
+  if (label) input.setAttribute("aria-label", label);
+  input.addEventListener("change", () => onSet(input.value));
+  return input;
+}
+
+function sentence(...parts) {
+  const p = make("p", "sentence");
+  parts.forEach((x) => p.append(typeof x === "string" ? document.createTextNode(x + " ") : x));
+  return p;
+}
+
+function drawTiles() {
+  if (!changed("tiles", [ui.tiles, ui.keys])) return;
+  el("tile-lines").replaceChildren(
+    ...ui.tiles.map((t, i) => {
+      const row = make("div", t.on ? "tline on" : "tline");
+      row.dataset.line = String(i);
+      if (t.editable) row.innerHTML = t.html;
+      else row.append(make("span", "help", ui.strings.tiles_locked));
+      return row;
+    })
+  );
+  const groups = {};
+  ui.keys.forEach((k) => {
+    if (!groups[k.group]) groups[k.group] = make("div", "keygroup " + k.group);
+    const b = make("button", "key", k.face);
+    b.type = "button";
+    b.disabled = !k.on;
+    b.setAttribute("aria-label", k.label);
+    b.title = k.label;
+    b.addEventListener("click", () => send("tiles.key", k.id));
+    groups[k.group].append(b);
+  });
+  el("keys").replaceChildren(...Object.values(groups));
+}
+
+function drawParts() {
+  if (!changed("parts", ui.parts)) return;
+  el("parts").replaceChildren(
+    ...ui.parts.map((p) => {
+      const b = make("button", "chip" + (p.on ? " on" : "") + (p.missing ? " missing" : ""));
+      b.type = "button";
+      b.append(badge(p.num, p.colour), make("span", "", p.name));
+      b.addEventListener("click", () => send(p.missing ? "concept.remove" : "part.pick", String(p.num)));
+      if (p.missing) b.title = ui.strings.part_missing;
+      return b;
+    })
+  );
+}
+
+function drawCard() {
+  if (!changed("card", [ui.card, ui.strings.card_tap])) return;
+  const box = el("card");
+  const c = ui.card;
+  if (!c) {
+    box.replaceChildren(make("p", "help", ui.strings.card_tap));
+    return;
+  }
+  const picture = make("div", "card-picture");
+  picture.innerHTML = c.picture;
+  if (!c.num) {
+    let word = c.words.length ? c.words[0].id : "";
+    const own = field("", (v) => { word = v; }, ui.strings.card_make, "text", ui.strings.card_own);
+    const pick = menu(c.words, (v) => { word = v; own.value = ""; }, ui.strings.card_make);
+    const make_ = make("button", "primary", ui.strings.card_make_button);
+    make_.type = "button";
+    make_.addEventListener("click", () => send("part.make", own.value || word));
+    box.replaceChildren(picture, sentence(ui.strings.card_make, pick, own), make_);
+    return;
+  }
+  const n = String(c.num) + "|";
+  const look = make("span", "look");
+  const sample = make("span", "sample");
+  sample.innerHTML = c.sample;
+  look.append(badge(c.num, c.colour), sample);
+  const rows = [
+    picture,
+    sentence(ui.strings.card_is, menu(c.words, (v) => send("part.name", n + v), ui.strings.card_is),
+      field("", (v) => send("part.name", n + v), ui.strings.card_is, "text", ui.strings.card_own)),
+    sentence(ui.strings.card_unit, menu(c.units, (v) => send("part.unit", n + v), ui.strings.card_unit)),
+    sentence(ui.strings.card_look, look),
+  ];
+  if (c.number) {
+    const range = [field(c.min, () => sendRange(), ui.strings.card_from, "number"),
+      field(c.max, () => sendRange(), ui.strings.card_to, "number"),
+      field(c.step, () => sendRange(), ui.strings.card_steps, "number")];
+    const sendRange = () => send("part.range", n + range.map((r) => r.value).join("|"));
+    rows.push(sentence(ui.strings.card_readers, menu(c.controls, (v) => send("part.control", n + v), ui.strings.card_readers)));
+    const [from, to, by] = range;
+    if (c.min !== "") rows.push(sentence(ui.strings.card_from, from, ui.strings.card_to, to, ui.strings.card_steps, by));
+  } else {
+    rows.push(make("p", "help", ui.strings.card_number_only));
+  }
+  const toggles = make("span", "toggles");
+  c.features.forEach((f) => {
+    const t = make("button", f.on ? "toggle on" : "toggle", f.label);
+    t.type = "button";
+    t.setAttribute("aria-pressed", f.on ? "true" : "false");
+    t.addEventListener("click", () => send("concept.toggle", c.num + " " + f.id));
+    toggles.append(t);
+  });
+  rows.push(sentence(ui.strings.card_show, toggles));
+  rows.push(sentence(ui.strings.card_say, field(c.say, (v) => send("part.say", n + v), ui.strings.card_say)));
+  rows.push(sentence(ui.strings.card_words, field(c.sentence_words, (v) => send("part.words", n + v), ui.strings.card_words)));
+  const remove = make("button", "remove-part", ui.strings.card_remove);
+  remove.type = "button";
+  remove.addEventListener("click", () => { send("concept.remove", String(c.num)); send("select.clear"); });
+  rows.push(remove);
+  box.replaceChildren(...rows);
+}
+
+function arrows(onUp, onDown) {
+  const up = make("button", "arrow", "↑");
+  up.type = "button";
+  up.setAttribute("aria-label", ui.strings.move_up);
+  up.addEventListener("click", onUp);
+  const down = make("button", "arrow", "↓");
+  down.type = "button";
+  down.setAttribute("aria-label", ui.strings.move_down);
+  down.addEventListener("click", onDown);
+  const x = make("button", "arrow", "×");
+  x.type = "button";
+  x.setAttribute("aria-label", ui.strings.remove);
+  const group = make("span", "arrows");
+  group.append(up, down, x);
+  return [group, x];
+}
+
+function drawBlocks() {
+  if (!changed("blocks", [ui.blocks, ui.verbs])) return;
+  el("blocks").replaceChildren(
+    ...ui.blocks.map((st, i) => {
+      const step = make("div", st.on ? "cblock on" : "cblock");
+      const top = make("div", "cblock-top");
+      top.append(make("strong", "", ui.strings.step_word));
+      top.append(field(st.caption, (v) => send("blocks.caption", i + "|" + v), ui.strings.step_caption));
+      const [moves, x] = arrows(() => send("blocks.move_step", i + "|up"), () => send("blocks.move_step", i + "|down"));
+      x.addEventListener("click", () => send("blocks.remove_step", String(i)));
+      top.append(moves);
+      const body = make("div", "cblock-body");
+      body.addEventListener("dragover", (e) => e.preventDefault());
+      body.addEventListener("drop", (e) => {
+        e.preventDefault();
+        if (e.target.closest(".block")) return;
+        send("blocks.move", e.dataTransfer.getData("text/plain") + "|" + i + "|" + st.acts.length);
+      });
+      st.acts.forEach((a, j) => {
+        const b = make("div", "block " + a.verb);
+        b.draggable = true;
+        b.addEventListener("dragstart", (e) => e.dataTransfer.setData("text/plain", i + "|" + j));
+        b.addEventListener("dragover", (e) => e.preventDefault());
+        b.addEventListener("drop", (e) => {
+          e.preventDefault();
+          send("blocks.move", e.dataTransfer.getData("text/plain") + "|" + i + "|" + j);
+        });
+        b.append(make("span", "verb", a.label));
+        const at = i + "|" + j + "|";
+        if (a.args.length) b.append(menu(a.args, (v) => send("blocks.arg", at + v), a.label));
+        if (a.value_too) b.append(field(a.value, (v) => send("blocks.value", at + v), a.label, "number"));
+        const [moves, bx] = arrows(() => send("blocks.move", at + "up"), () => send("blocks.move", at + "down"));
+        bx.addEventListener("click", () => send("blocks.remove", i + "|" + j));
+        b.append(moves);
+        body.append(b);
+      });
+      const add = make("div", "block-add");
+      let verb = ui.verbs.length ? ui.verbs[0].id : "";
+      const pick = menu(ui.verbs, (v) => { verb = v; }, ui.strings.blocks_add);
+      const go = make("button", "", ui.strings.blocks_add);
+      go.type = "button";
+      go.addEventListener("click", () => send("blocks.add", i + "|" + verb));
+      add.append(pick, go);
+      step.append(top, body, add);
+      return step;
+    })
+  );
+}
+
+function drawViews() {
+  segmented(el("views"), ui.views, "view.set");
 }
 
 function drawProse() {
@@ -129,7 +343,7 @@ function drawControls() {
         out.textContent = c.lo + " – " + c.hi;
       } else {
         if (document.activeElement !== inputs[0]) inputs[0].value = c.value;
-        out.textContent = c.value;
+        out.textContent = c.shown;
       }
     });
     return;
@@ -149,7 +363,7 @@ function drawControls() {
         row.append(make("output", "", c.lo + " – " + c.hi));
       } else {
         row.append(rangeInput(c, c.value, (v) => send("value.set", c.name + "|" + v)));
-        row.append(make("output", "", c.value));
+        row.append(make("output", "", c.shown));
       }
       return row;
     })
@@ -262,6 +476,14 @@ function draw(result) {
   drawSteps();
   drawErrors();
   if (mode === "edit") {
+    drawPanels();
+    segmented(el("roles"), ui.roles, "role.set");
+    el("code").checked = ui.code;
+    drawTiles();
+    drawParts();
+    drawCard();
+    drawBlocks();
+    setText("sentence", ui.sentence);
     setText("doc-title", ui.doc.title);
     setText("formulas", ui.doc.formulas);
     setText("sheet", ui.doc.sheet);
@@ -399,7 +621,7 @@ function wireReader() {
   box.addEventListener("click", (e) => {
     if (mode !== "edit" || moved) return;
     const n = e.target.closest("[data-n]");
-    if (n) send("select", n.dataset.n);
+    if (n) send("select", n.dataset.part ? n.dataset.n + "|" + n.dataset.part : n.dataset.n);
   });
   box.addEventListener("keydown", (e) => {
     const s = e.target.closest("[data-scrub]");
@@ -437,7 +659,24 @@ function wireEditor() {
   el("size").addEventListener("change", () => send("export.size", el("size").value));
   el("clear").addEventListener("change", () => send("export.clear"));
   document.querySelectorAll("[data-export]").forEach((b) => {
-    b.addEventListener("click", () => send("export." + b.dataset.export));
+    b.addEventListener("click", () => send("export." + b.dataset.export, b.dataset.value || ""));
+  });
+  el("code").addEventListener("change", () => send("code.toggle"));
+  el("sentence").addEventListener("input", () => queue("prose.plain", el("sentence").value));
+  el("add-line").addEventListener("click", () => send("tiles.add_line"));
+  el("remove-line").addEventListener("click", () => send("tiles.remove_line"));
+  el("add-step").addEventListener("click", () => send("blocks.add_step"));
+  const lines = el("tile-lines");
+  lines.addEventListener("click", (e) => {
+    const at = e.target.closest("[data-at]");
+    if (at) send("tiles.at", at.dataset.at);
+    lines.focus();
+  });
+  // typed keys go to the core, which decides what each one means
+  lines.addEventListener("keydown", (e) => {
+    if (e.key === "Tab" || e.ctrlKey || e.metaKey || e.altKey) return;
+    e.preventDefault();
+    send("tiles.key", e.key);
   });
   el("add").addEventListener("click", () => send("concept.add"));
   const list = el("concept-list");
@@ -466,8 +705,11 @@ async function main() {
   const strings = await (await fetch("data/strings.json")).text();
   const examples = await (await fetch("data/examples.json")).text();
   glossary = await (await fetch("data/glossary.md")).text();
+  // read the link before the first draw writes the starting document's
+  // fragment into the address
+  const opened = location.hash;
   draw(JSON.parse(start(strings, examples, glossary, mode)));
-  if (location.hash) send("doc.fragment", location.hash);
+  if (opened) send("doc.fragment", opened);
   wireReader();
   if (mode === "edit") wireEditor();
   document.body.dataset.ready = "true";
