@@ -490,11 +490,24 @@ function draw(result) {
     setText("prose", ui.doc.prose);
     const select = el("examples");
     if (select.options.length !== ui.examples.length) {
-      select.replaceChildren(...ui.examples.map((e) => {
+      // the core heads each field in the Teacher mode; a student's menu has no heading
+      const items = [];
+      let group = null;
+      for (const e of ui.examples) {
         const o = make("option", "", e.label);
         o.value = e.id;
-        return o;
-      }));
+        if (!e.field) {
+          items.push(o);
+          continue;
+        }
+        if (!group || group.label !== e.field) {
+          group = document.createElement("optgroup");
+          group.label = e.field;
+          items.push(group);
+        }
+        group.append(o);
+      }
+      select.replaceChildren(...items);
     }
     const current = ui.examples.find((e) => e.on);
     if (current) select.value = current.id;

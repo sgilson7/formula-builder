@@ -96,6 +96,28 @@ def run(page, check, engine):
     check(page.inner_text("#intro p") == STRINGS["intro"], "the intro from data/strings.json is drawn")
     labels = page.eval_on_selector_all("#examples option", "os => os.map(o => o.textContent)")
     check(labels == [e["label"] for e in EXAMPLES], "every example is offered by name")
+    heads = page.eval_on_selector_all("#examples optgroup", "gs => gs.map(g => g.label)")
+    fields = []
+    for e in EXAMPLES:
+        head = STRINGS["field_" + e["group"]]
+        if head not in fields:
+            fields.append(head)
+    check(heads == fields, "the Teacher menu heads each field once, in order %s" % heads)
+    broken = []
+    for e in EXAMPLES:
+        page.select_option("#examples", e["id"])
+        page.wait_for_function("t => document.querySelector('#doc-title').value === t", arg=e["doc"]["title"])
+        if page.is_visible("#errors") or page.is_visible("#plot-error"):
+            broken.append(e["id"])
+    check(broken == [], "every example opens with no error and no plot error %s" % broken)
+    # a long fraction of tiles scrolls in its box instead of pushing the keypad over the reader
+    page.select_option("#examples", "secant")
+    page.wait_for_selector("#tile-lines .tfrac")
+    editor = page.locator(".editor").bounding_box()
+    keys = page.locator("#keys").bounding_box()
+    check(keys["x"] + keys["width"] <= editor["x"] + editor["width"], "the keypad stays inside its column beside a wide line of tiles")
+    page.select_option("#examples", "line")
+    page.wait_for_selector("#formula [data-scrub='1']")
     # y = m x + b with the slope shown as its value 1.5: y = 1 . 5 x + b
     check(page.locator("#formula svg use").count() == 8, "y = 1.5 x + b draws eight glyphs")
 
@@ -141,5 +163,6 @@ def run(page, check, engine):
     base = page.url.split("/index.html")[0]
     page.goto(base + "/embed.html" + link[len(STRINGS["site"]):])
     page.wait_for_selector("body[data-ready='true']", state="attached")
-    check(page.inner_text("#title") == EXAMPLES[0]["doc"]["title"], "the embed draws the linked document")
+    LINE = next(e for e in EXAMPLES if e["id"] == "line")
+    check(page.inner_text("#title") == LINE["doc"]["title"], "the embed draws the linked document")
     check(page.locator("#formula [data-scrub='1']").count() == 1, "the embed keeps the scrubbable slope")

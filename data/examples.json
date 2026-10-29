@@ -1,55 +1,5 @@
 [
  {
-  "id": "line",
-  "label": "Slope and intercept",
-  "doc": {
-   "title": "Slope and intercept",
-   "formulas": "y = m x + b",
-   "sheet": "concept slope: m\n  say how far y rises for one step to the right in x\n  label above\n  scrub -3 .. 3 step 0.5 = 1.5\n  limit -2 .. 2\nconcept intercept: b\n  say where the line crosses the y axis, when x is 0\n  brace below\n  slider -4 .. 4 step 0.5 = 1\nplot y over x from -5 to 5\n  y from -8 to 8\n  mark slope rise x = 1\n  mark intercept intercept\n",
-   "prose": "The line rises by its [slope](slope) for each step to the right, and crosses the y axis at the [intercept](intercept). Drag the slope sideways, or slide the intercept."
-  }
- },
- {
-  "id": "descent",
-  "label": "One step of gradient descent",
-  "doc": {
-   "title": "One step of gradient descent",
-   "formulas": "w_{k+1} = w_k - \\alpha \\nabla f(w_k)\nf(w) = \\frac{(w - 3)^2}{5} + \\frac{1}{2}",
-   "sheet": "concept next: w_{k+1}\n  name next weight\n  say where this update moves the weight\n  label below next weight\nconcept current: w_k\n  name current weight\n  say the weight before this step\n  slider 0 .. 6 step 0.1 = 1.2\nconcept stepsize: \\alpha\n  name step size\n  say how far one update moves\n  scrub 0.1 .. 2.5 step 0.1 = 0.8\n  tint\nconcept gradient: \\nabla f(w_k)\n  name gradient\n  say the slope of the loss at the current weight\n  brace below gradient\nplot f over w from 0 to 6\n  mark current point w = w_k\n  mark next point w = w_{k+1}\n",
-   "prose": "Start at the [current weight](current), find the [gradient](gradient) of the loss there, and move against it by the [step size](stepsize) to reach the [next weight](next). Make the step size large and watch the next weight jump past the lowest point."
-  }
- },
- {
-  "id": "complex",
-  "label": "The real part of a complex number",
-  "doc": {
-   "title": "The real part of a complex number",
-   "formulas": "\\mathrm{Re}(z) = \\frac{z + \\bar{z}}{2}\n\\mathrm{Re}(z) = \\frac{(a + bi) + (a - bi)}{2}\n\\mathrm{Re}(z) = \\frac{a + a + bi - bi}{2}\n\\mathrm{Re}(z) = \\frac{2a}{2} = a",
-   "sheet": "concept real: a\n  name real part\n  say the part of z on the real axis\nconcept imaginary: bi\n  name imaginary part\n  say the part of z on the imaginary axis\nconcept conjugate: \\bar{z}\n  name conjugate\n  say z with the sign of its imaginary part flipped\n  label below conjugate\nstep Start from the definition\n  formula 1\nstep Write z and its conjugate in parts\n  formula 2\nstep Collect the terms\n  formula 3\n  strike imaginary\nstep The imaginary parts cancel\n  formula 4\n  focus real\n",
-   "prose": "Adding z to its [conjugate](conjugate) cancels the [imaginary part](imaginary) and doubles the [real part](real). Press Play to watch it happen, or step through by hand."
-  }
- },
- {
-  "id": "interest",
-  "label": "Compound interest",
-  "doc": {
-   "title": "Compound interest",
-   "formulas": "A = P \\left(1 + \\frac{r}{n}\\right)^{t n}",
-   "sheet": "concept principal: P\n  say the money put in at the start\n  edit 1000\nconcept rate: r\n  name yearly rate\n  say the interest rate for one year, as a fraction\n  slider 0 .. 0.2 step 0.01 = 0.05\nconcept years: t\n  say how long the money grows\n  scrub 0 .. 40 step 1 = 10\nconcept growth: \\left(1 + \\frac{r}{n}\\right)^{t n}\n  name growth factor\n  say how many times over the money multiplies\n  border\nhidden n 1 .. 365 step 1 = 12 times it compounds each year\nplot A over t from 0 to 40\n  mark years point t = t\n",
-   "prose": "Put in a [principal](principal) and let it grow at a [yearly rate](rate) for some [years](years). The [growth factor](growth) multiplies the principal. Type a new principal into its box."
-  }
- },
- {
-  "id": "pythagoras",
-  "label": "Pythagoras",
-  "doc": {
-   "title": "Pythagoras",
-   "formulas": "c^2 = a^2 + b^2\nc = \\sqrt{a^2 + b^2}",
-   "sheet": "concept hypotenuse: c\n  say the side across from the right angle\n  label above\n  pointer\nconcept sidea: a\n  name side a\n  slider 1 .. 12 step 1 = 3\nconcept sideb: b\n  name side b\n  slider 1 .. 12 step 1 = 4\nconcept squares: a^2 + b^2\n  name sum of the squares\n  say the area of the two smaller squares together\n  border\n",
-   "prose": "The square on the [hypotenuse](hypotenuse) equals the [sum of the squares](squares) on [side a](sidea) and [side b](sideb). Hover the hypotenuse to see its length."
-  }
- },
- {
   "id": "rectangle",
   "label": "Area of a rectangle",
   "group": "shelf",
@@ -113,6 +63,413 @@
    "formulas": "3 \\left(2 + x\\right)\n3 \\times 2 + 3 \\times x\n6 + 3 x",
    "sheet": "concept three: 3\n  name the 3s\nconcept x: x\n  name number in the bracket\nstep 3 groups of (2 + x)\n  formula 1\nstep Share the 3 with each part\n  formula 2\n  focus three\nstep Work out 3 times 2\n  formula 3\n",
    "prose": "The [3](three) multiplies each part inside the bracket. Press Play."
+  }
+ },
+ {
+  "id": "perimeter",
+  "label": "Perimeter of a rectangle",
+  "group": "shelf",
+  "doc": {
+   "title": "Perimeter of a rectangle",
+   "formulas": "P = 2 \\ell + 2 w",
+   "sheet": "concept length: \\ell\n  unit cm\n  label above\n  slider 1 .. 10 step 1 = 5\nconcept width: w\n  unit cm\n  label above\n  slider 1 .. 10 step 1 = 2\nconcept perimeter: P\n  unit cm\n  say the distance all the way round the rectangle\n  label below\n",
+   "prose": "The [perimeter](perimeter) goes round two [lengths](length) and two [widths](width). Slide them and watch it change."
+  }
+ },
+ {
+  "id": "mean",
+  "label": "The mean of three numbers",
+  "group": "shelf",
+  "doc": {
+   "title": "The mean of three numbers",
+   "formulas": "m = \\frac{a + b + c}{3}",
+   "sheet": "concept first: a\n  name first number\n  slider 0 .. 20 step 1 = 4\nconcept second: b\n  name second number\n  slider 0 .. 20 step 1 = 7\nconcept third: c\n  name third number\n  slider 0 .. 20 step 1 = 10\nconcept mean: m\n  say the share each number gets if you even them out\n  label below\n",
+   "prose": "Add the [first](first), [second](second) and [third](third) numbers, then share the total out three ways to get the [mean](mean)."
+  }
+ },
+ {
+  "id": "percent",
+  "label": "A percent of a number",
+  "group": "shelf",
+  "doc": {
+   "title": "A percent of a number",
+   "formulas": "p = \\frac{r}{100} \\times w",
+   "sheet": "concept rate: r\n  name percent\n  label above\n  slider 0 .. 100 step 5 = 25\nconcept whole: w\n  label above\n  slider 0 .. 200 step 10 = 80\nconcept hundredths: \\frac{r}{100}\n  name out of 100\n  say the percent written as a fraction of 100\n  border\nconcept part: p\n  say the part of the whole you get\n  label below\n",
+   "prose": "A [percent](rate) is a number [out of 100](hundredths). Take that much of the [whole](whole) to get the [part](part)."
+  }
+ },
+ {
+  "id": "descent",
+  "label": "One step of gradient descent",
+  "doc": {
+   "title": "One step of gradient descent",
+   "formulas": "w_{k+1} = w_k - \\alpha \\nabla f(w_k)\nf(w) = \\frac{(w - 3)^2}{5} + \\frac{1}{2}",
+   "sheet": "concept next: w_{k+1}\n  name next weight\n  say where this update moves the weight\n  label below next weight\nconcept current: w_k\n  name current weight\n  say the weight before this step\n  slider 0 .. 6 step 0.1 = 1.2\nconcept stepsize: \\alpha\n  name step size\n  say how far one update moves\n  scrub 0.1 .. 2.5 step 0.1 = 0.8\n  tint\nconcept gradient: \\nabla f(w_k)\n  name gradient\n  say the slope of the loss at the current weight\n  brace below gradient\nplot f over w from 0 to 6\n  mark current point w = w_k\n  mark next point w = w_{k+1}\n",
+   "prose": "Start at the [current weight](current), find the [gradient](gradient) of the loss there, and move against it by the [step size](stepsize) to reach the [next weight](next). Make the step size large and watch the next weight jump past the lowest point."
+  },
+  "group": "paper"
+ },
+ {
+  "id": "complex",
+  "label": "The real part of a complex number",
+  "doc": {
+   "title": "The real part of a complex number",
+   "formulas": "\\mathrm{Re}(z) = \\frac{z + \\bar{z}}{2}\n\\mathrm{Re}(z) = \\frac{(a + bi) + (a - bi)}{2}\n\\mathrm{Re}(z) = \\frac{a + a + bi - bi}{2}\n\\mathrm{Re}(z) = \\frac{2a}{2} = a",
+   "sheet": "concept real: a\n  name real part\n  say the part of z on the real axis\nconcept imaginary: bi\n  name imaginary part\n  say the part of z on the imaginary axis\nconcept conjugate: \\bar{z}\n  name conjugate\n  say z with the sign of its imaginary part flipped\n  label below conjugate\nstep Start from the definition\n  formula 1\nstep Write z and its conjugate in parts\n  formula 2\nstep Collect the terms\n  formula 3\n  strike imaginary\nstep The imaginary parts cancel\n  formula 4\n  focus real\n",
+   "prose": "Adding z to its [conjugate](conjugate) cancels the [imaginary part](imaginary) and doubles the [real part](real). Press Play to watch it happen, or step through by hand."
+  },
+  "group": "paper"
+ },
+ {
+  "id": "pythagoras",
+  "label": "Pythagoras",
+  "doc": {
+   "title": "Pythagoras",
+   "formulas": "c^2 = a^2 + b^2\nc = \\sqrt{a^2 + b^2}",
+   "sheet": "concept hypotenuse: c\n  say the side across from the right angle\n  label above\n  pointer\nconcept sidea: a\n  name side a\n  slider 1 .. 12 step 1 = 3\nconcept sideb: b\n  name side b\n  slider 1 .. 12 step 1 = 4\nconcept squares: a^2 + b^2\n  name sum of the squares\n  say the area of the two smaller squares together\n  border\n",
+   "prose": "The square on the [hypotenuse](hypotenuse) equals the [sum of the squares](squares) on [side a](sidea) and [side b](sideb). Hover the hypotenuse to see its length."
+  },
+  "group": "paper"
+ },
+ {
+  "id": "fourier",
+  "label": "The discrete Fourier transform",
+  "group": "paper",
+  "doc": {
+   "title": "The discrete Fourier transform",
+   "formulas": "X_k = \\frac{1}{N} \\sum_{n=0}^{N-1} x_n e^{-i 2 \\pi k \\frac{n}{N}}",
+   "sheet": "concept energy: X_k\n  name energy\n  say how much of frequency k is in the signal\n  label below energy\nconcept frequency: k\n  say how many times round the circle per signal\n  tint\nconcept average: \\frac{1}{N} \\sum_{n=0}^{N-1}\n  name average\n  say add up the points, then divide by how many\n  brace below average\nconcept signal: x_n\n  say the signal at point n\n  border\nconcept spin: i 2 \\pi\n  name spin\n  say winds the signal round a circle\n  label above spin\n",
+   "prose": "The [energy](energy) at one [frequency](frequency) comes from winding the [signal](signal) [round a circle](spin) at that frequency, then taking the [average](average) of the wound points."
+  }
+ },
+ {
+  "id": "bayes",
+  "label": "Bayes' theorem",
+  "group": "paper",
+  "doc": {
+   "title": "Bayes' theorem",
+   "formulas": "P(A|B) = \\frac{P(B|A) \\, P(A)}{P(B)}",
+   "sheet": "concept posterior: P(A|B)\n  name after\n  say how likely A is once you know B happened\n  label below after\nconcept likelihood: P(B|A)\n  name fit\n  say how likely B is when A is true\n  border\nconcept prior: P(A)\n  name before\n  say how likely A was before you knew about B\n  label above before\nconcept evidence: P(B)\n  name all of B\n  say how likely B is, whether or not A is true\n  label below\n",
+   "prose": "Start from how likely A was [before](prior), scale it by how well A [fits](likelihood) what you saw, and divide by how likely the evidence was [all told](evidence) to get the chance [after](posterior)."
+  }
+ },
+ {
+  "id": "rendering",
+  "label": "The rendering equation",
+  "group": "paper",
+  "doc": {
+   "title": "The rendering equation",
+   "formulas": "L_o(x, \\omega_o) = L_e(x, \\omega_o) + \\int_{\\Omega} f_r(x, \\omega_i, \\omega_o) \\, L_i(x, \\omega_i) \\, (\\omega_i \\cdot n) \\, d\\omega_i",
+   "sheet": "concept outgoing: L_o(x, \\omega_o)\n  name light out\n  say the light leaving point x towards the viewer\n  label below light out\nconcept emitted: L_e(x, \\omega_o)\n  name glow\n  say light the point gives off by itself\n  label below glow\nconcept hemisphere: \\int_{\\Omega}\n  name every direction\n  say add up over the half sphere above the point\n  pointer\nconcept bounce: f_r(x, \\omega_i, \\omega_o)\n  name bounce chance\n  say the share of light from one direction sent on to the viewer\n  brace below bounce\nconcept incoming: L_i(x, \\omega_i)\n  name light in\n  say light arriving from one direction\n  border\nconcept angle: (\\omega_i \\cdot n)\n  name tilt\n  say light at a slant spreads out and counts for less\n",
+   "prose": "The [light out](outgoing) of a point is its own [glow](emitted), plus the [light in](incoming) from [every direction](hemisphere), each scaled by its [bounce chance](bounce) and its [tilt](angle). The light in comes from this same equation at other points."
+  }
+ },
+ {
+  "id": "circle",
+  "label": "Circumference of a circle",
+  "group": "paper",
+  "doc": {
+   "title": "Circumference of a circle",
+   "formulas": "C = 2 \\pi r",
+   "sheet": "concept radius: r\n  unit cm\n  label above\n  slider 0.5 .. 5 step 0.5 = 1\nconcept pi: \\pi\n  name pi\n  say about 3.14: how many diameters fit round any circle\n  tint\nconcept around: C\n  name circumference\n  unit cm\n  say the distance round the circle\n  label below\nplot C over r from 0 to 5\n  y from 0 to 32\n  mark radius point r = r\n",
+   "prose": "The [circumference](around) is [pi](pi) times two [radii](radius), the same for every circle. Slide the radius and the point moves along a straight line."
+  }
+ },
+ {
+  "id": "momentum",
+  "label": "How fast momentum converges",
+  "group": "paper",
+  "doc": {
+   "title": "How fast momentum converges",
+   "formulas": "\\kappa = \\frac{\\lambda_n}{\\lambda_1}\nE = \\left(\\frac{\\sqrt{\\kappa} - 1}{\\sqrt{\\kappa} + 1}\\right)^{k}",
+   "sheet": "concept condition: \\kappa\n  name condition number\n  say how stretched the bowl is: steepest curve over flattest\nconcept steep: \\lambda_n\n  name steepest curve\n  slider 1 .. 100 step 1 = 50\nconcept flat: \\lambda_1\n  name flattest curve\n  slider 1 .. 10 step 1 = 1\nconcept steps: k\n  scrub 0 .. 60 step 1 = 10\nconcept rate: \\frac{\\sqrt{\\kappa} - 1}{\\sqrt{\\kappa} + 1}\n  name rate\n  say the share of the error left after one step\n  border\nplot E over k from 0 to 60\n  y from 0 to 1\n  mark steps point k = k\n",
+   "prose": "The [condition number](condition) compares the [steepest](steep) and [flattest](flat) curves of the bowl. The closer it is to 1, the smaller the [rate](rate), and the faster the error shrinks over the [steps](steps)."
+  }
+ },
+ {
+  "id": "wave",
+  "label": "A travelling sine wave",
+  "group": "paper",
+  "doc": {
+   "title": "A travelling sine wave",
+   "formulas": "y = A \\sin(k x - \\omega t)",
+   "sheet": "concept amplitude: A\n  say how high the wave reaches\n  slider 0.5 .. 3 step 0.5 = 1.5\nconcept wavenumber: k\n  name wave number\n  say how many waves fit in a stretch of x\n  slider 0.5 .. 3 step 0.5 = 1\nconcept speed: \\omega\n  name angular speed\n  say how fast each point bobs up and down\n  slider 0.5 .. 3 step 0.5 = 1\nconcept time: t\n  slider 0 .. 12 step 0.5 = 0\nplot y over x from 0 to 12\n  y from -3 to 3\n  mark amplitude curve\n",
+   "prose": "Slide the [time](time) and the wave slides along. Its [amplitude](amplitude) sets the height, the [wave number](wavenumber) how tightly it packs, and the [angular speed](speed) how fast it moves."
+  }
+ },
+ {
+  "id": "growth",
+  "label": "Exponential growth",
+  "group": "paper",
+  "doc": {
+   "title": "Exponential growth",
+   "formulas": "\\frac{dy}{dt} = k y\ny = y_0 e^{k t}",
+   "sheet": "concept change: \\frac{dy}{dt}\n  name rate of change\n  say how fast y is changing right now\n  brace below rate of change\nconcept rate: k\n  name growth rate\n  slider -0.5 .. 0.5 step 0.05 = 0.3\nconcept start: y_0\n  name starting amount\n  slider 1 .. 10 step 1 = 2\nconcept time: t\n  slider 0 .. 10 step 0.5 = 3\nplot y over t from 0 to 10\n  y from 0 to 60\n  mark time point t = t\n",
+   "prose": "The [rate of change](change) is the [growth rate](rate) times how much there is, so the more there is, the faster it grows. From a [starting amount](start), slide the [time](time) to follow the curve."
+  }
+ },
+ {
+  "id": "bellman",
+  "label": "The Bellman equation",
+  "group": "paper",
+  "doc": {
+   "title": "The Bellman equation",
+   "formulas": "Q(s, a) = r + \\gamma \\max_{a^{\\prime}} Q(s^{\\prime}, a^{\\prime})",
+   "sheet": "concept value: Q(s, a)\n  name value\n  say how good it is to take action a in state s\n  label below value\nconcept reward: r\n  say what you get straight away\n  label below\nconcept discount: \\gamma\n  say how much less a later reward counts, between 0 and 1\n  tint\nconcept future: \\max_{a^{\\prime}} Q(s^{\\prime}, a^{\\prime})\n  name best next move\n  say the value of the best action from the next state\n  brace below best next move\n",
+   "prose": "The [value](value) of a move is the [reward](reward) it brings now, plus the [best next move](future) after it, worth a little less by the [discount](discount)."
+  }
+ },
+ {
+  "id": "metrics",
+  "label": "Two ways to measure distance",
+  "group": "paper",
+  "doc": {
+   "title": "Two ways to measure distance",
+   "formulas": "d = \\sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}\nm = \\left|x_2 - x_1\\right| + \\left|y_2 - y_1\\right|",
+   "sheet": "concept across: x_2 - x_1\n  name distance across\n  border\nconcept up: y_2 - y_1\n  name distance up\n  border\nconcept straight: d\n  name straight-line distance\n  say as the crow flies\n  label below\nconcept blocks: m\n  name city-block distance\n  say along the streets of a grid\n  label below\nhidden x_1 0 .. 10 step 1 = 1 first x\nhidden y_1 0 .. 10 step 1 = 1 first y\nhidden x_2 0 .. 10 step 1 = 4 second x\nhidden y_2 0 .. 10 step 1 = 5 second y\n",
+   "prose": "The [straight-line distance](straight) and the [city-block distance](blocks) both start from the [distance across](across) and the [distance up](up). Hover each to compare them."
+  }
+ },
+ {
+  "id": "gausslaw",
+  "label": "Gauss's law",
+  "group": "paper",
+  "doc": {
+   "title": "Gauss's law",
+   "formulas": "\\oint \\vec{E} \\cdot d\\vec{A} = \\frac{Q}{\\epsilon_0}",
+   "sheet": "concept flux: \\oint \\vec{E} \\cdot d\\vec{A}\n  name flow out\n  say the electric field flowing out through a closed surface\n  brace below flow out\nconcept field: \\vec{E}\n  name electric field\n  tint\nconcept patch: d\\vec{A}\n  name surface patch\n  say a small piece of the surface, pointing outwards\nconcept charge: Q\n  say the charge inside the surface\n  label below\nconcept constant: \\epsilon_0\n  name free-space constant\n  say a fixed number that sets the units\n",
+   "prose": "The [flow out](flux) of the [electric field](field) through every [surface patch](patch) of a closed surface depends only on the [charge](charge) inside it, over the [free-space constant](constant)."
+  }
+ },
+ {
+  "id": "line",
+  "label": "Slope and intercept",
+  "doc": {
+   "title": "Slope and intercept",
+   "formulas": "y = m x + b",
+   "sheet": "concept slope: m\n  say how far y rises for one step to the right in x\n  label above\n  scrub -3 .. 3 step 0.5 = 1.5\n  limit -2 .. 2\nconcept intercept: b\n  say where the line crosses the y axis, when x is 0\n  brace below\n  slider -4 .. 4 step 0.5 = 1\nplot y over x from -5 to 5\n  y from -8 to 8\n  mark slope rise x = 1\n  mark intercept intercept\n",
+   "prose": "The line rises by its [slope](slope) for each step to the right, and crosses the y axis at the [intercept](intercept). Drag the slope sideways, or slide the intercept."
+  },
+  "group": "algebra"
+ },
+ {
+  "id": "interest",
+  "label": "Compound interest",
+  "doc": {
+   "title": "Compound interest",
+   "formulas": "A = P \\left(1 + \\frac{r}{n}\\right)^{t n}",
+   "sheet": "concept principal: P\n  say the money put in at the start\n  edit 1000\nconcept rate: r\n  name yearly rate\n  say the interest rate for one year, as a fraction\n  slider 0 .. 0.2 step 0.01 = 0.05\nconcept years: t\n  say how long the money grows\n  scrub 0 .. 40 step 1 = 10\nconcept growth: \\left(1 + \\frac{r}{n}\\right)^{t n}\n  name growth factor\n  say how many times over the money multiplies\n  border\nhidden n 1 .. 365 step 1 = 12 times it compounds each year\nplot A over t from 0 to 40\n  mark years point t = t\n",
+   "prose": "Put in a [principal](principal) and let it grow at a [yearly rate](rate) for some [years](years). The [growth factor](growth) multiplies the principal. Type a new principal into its box."
+  },
+  "group": "algebra"
+ },
+ {
+  "id": "quadratic",
+  "label": "Where a parabola crosses zero",
+  "group": "algebra",
+  "doc": {
+   "title": "Where a parabola crosses zero",
+   "formulas": "y = a x^2 + b x + c\nx = \\frac{-b \\pm \\sqrt{b^2 - 4 a c}}{2 a}",
+   "sheet": "concept curve: a\n  name curve\n  slider 0.5 .. 3 step 0.5 = 1\nconcept tilt: b\n  slider -5 .. 5 step 1 = 0\nconcept lift: c\n  name height\n  slider -6 .. 6 step 1 = -4\nconcept discriminant: b^2 - 4 a c\n  name discriminant\n  say below 0: no crossings; 0: one; above 0: two\n  border\nplot y over x from -5 to 5\n  y from -10 to 10\n  mark lift intercept\n",
+   "prose": "The [discriminant](discriminant) says how many times the parabola crosses zero. Move the [height](lift) up past zero and watch the crossings disappear."
+  }
+ },
+ {
+  "id": "secant",
+  "label": "The slope at a point",
+  "group": "calculus",
+  "doc": {
+   "title": "The slope at a point",
+   "formulas": "f(x) = \\frac{x^2}{4}\nm = \\frac{f(a + h) - f(a)}{h}",
+   "sheet": "concept point: a\n  slider -4 .. 4 step 0.5 = 1\nconcept gap: h\n  scrub 0.1 .. 3 step 0.1 = 2\n  label above\nconcept rise: f(a + h) - f(a)\n  border\nconcept slope: m\n  say the slope of the line through the two points\n  label below\nplot f over x from -5 to 5\n  y from -1 to 7\n  mark point point x = a\n  mark gap point x = a + h\n",
+   "prose": "The [slope](slope) is the [rise](rise) over the [gap](gap). Drag the gap towards zero and the slope settles on the slope of the curve at the [point](point)."
+  }
+ },
+ {
+  "id": "newton",
+  "label": "Newton's method",
+  "group": "calculus",
+  "doc": {
+   "title": "Newton's method",
+   "formulas": "x_{n+1} = x_n - \\frac{f(x_n)}{f^{\\prime}(x_n)}\nf(x) = x^2 - 2",
+   "sheet": "concept next: x_{n+1}\n  name next guess\n  label below next guess\nconcept current: x_n\n  name current guess\n  slider 0.5 .. 4 step 0.1 = 3\nconcept height: f(x_n)\n  say how far the curve is from zero here\n  border\nconcept slope: f^{\\prime}(x_n)\n  say how steep the curve is here\n  tint\nplot f over x from 0 to 4\n  y from -3 to 14\n  mark current point x = x_n\n  mark next point x = x_{n+1}\n",
+   "prose": "Follow the curve's [slope](slope) from the [current guess](current) down by its [height](height) to the [next guess](next). Each step lands closer to the square root of 2."
+  }
+ },
+ {
+  "id": "riemann",
+  "label": "Area under a curve",
+  "group": "calculus",
+  "doc": {
+   "title": "Area under a curve",
+   "formulas": "\\sum_{i=1}^{n} f(x_i) \\, \\Delta x \\approx \\int_{a}^{b} f(x) \\, dx\nf(x) = 1 + \\frac{x^2}{4}",
+   "sheet": "concept height: f(x_i)\n  say the height of one thin rectangle\n  label above\nconcept width: \\Delta x\n  say the width of each rectangle\n  label above\nconcept rectangles: \\sum_{i=1}^{n}\n  name add them up\n  brace below add them up\nconcept area: \\int_{a}^{b}\n  name exact area\n  say what the sum gets close to as the rectangles get thinner\n  border\nplot f over x from 0 to 4\n  y from 0 to 6\n  mark height curve\n",
+   "prose": "Cut the region into thin rectangles, each with a [height](height) and a [width](width), and [add them up](rectangles). As the rectangles thin, the sum closes in on the [exact area](area)."
+  }
+ },
+ {
+  "id": "euler",
+  "label": "Where e comes from",
+  "group": "calculus",
+  "doc": {
+   "title": "Where e comes from",
+   "formulas": "y = \\left(1 + \\frac{1}{n}\\right)^{n}",
+   "sheet": "concept times: n\n  name number of steps\n  scrub 1 .. 60 step 1 = 1\nconcept piece: \\frac{1}{n}\n  name each step's growth\n  border\nconcept total: y\n  name total growth\n  say tends to e, about 2.718, as n grows\n  label below\nplot y over n from 1 to 60\n  y from 2 to 3\n  mark times point n = n\n",
+   "prose": "Grow by [each step's growth](piece) over more and more [steps](times). The [total growth](total) never passes e."
+  }
+ },
+ {
+  "id": "dot",
+  "label": "The dot product",
+  "group": "linalg",
+  "doc": {
+   "title": "The dot product",
+   "formulas": "\\vec{a} \\cdot \\vec{b} = a_1 b_1 + a_2 b_2\n\\vec{a} \\cdot \\vec{b} = \\left|\\vec{a}\\right| \\left|\\vec{b}\\right| \\cos \\theta",
+   "sheet": "concept first: \\vec{a}\n  name first arrow\n  tint\nconcept second: \\vec{b}\n  name second arrow\n  tint\nconcept parts: a_1 b_1 + a_2 b_2\n  name part by part\n  say multiply matching parts, then add\n  brace below part by part\nconcept angle: \\cos \\theta\n  name angle\n  say 1 when the arrows line up, 0 when they are square to each other\n  border\nstep Part by part\n  formula 1\nstep Lengths and the angle\n  formula 2\n  focus angle\n",
+   "prose": "The dot product of the [first arrow](first) and the [second arrow](second) can be found [part by part](parts), or from their lengths and the [angle](angle) between them. Press Play."
+  }
+ },
+ {
+  "id": "determinant",
+  "label": "Area from a determinant",
+  "group": "linalg",
+  "doc": {
+   "title": "Area from a determinant",
+   "formulas": "D = a d - b c",
+   "sheet": "concept stretch: a d\n  name stretch\n  say the area if the columns were square to each other\n  border\nconcept lean: b c\n  name lean\n  say the area the lean takes away\n  border\nconcept area: D\n  name determinant\n  say the area of the parallelogram the two columns make\n  label below\nhidden a 0 .. 5 step 1 = 3 top left\nhidden b 0 .. 5 step 1 = 1 top right\nhidden c 0 .. 5 step 1 = 1 bottom left\nhidden d 0 .. 5 step 1 = 2 bottom right\n",
+   "prose": "For the 2 by 2 matrix with rows a, b and c, d, the [determinant](area) is the [stretch](stretch) take away the [lean](lean). Change the numbers and hover the determinant."
+  }
+ },
+ {
+  "id": "eigen",
+  "label": "An eigenvector keeps its direction",
+  "group": "linalg",
+  "doc": {
+   "title": "An eigenvector keeps its direction",
+   "formulas": "A \\vec{v} = \\lambda \\vec{v}",
+   "sheet": "concept matrix: A\n  say a change applied to every arrow\n  label below\nconcept vector: \\vec{v}\n  name eigenvector\n  say an arrow the matrix only stretches\n  tint\nconcept value: \\lambda\n  name eigenvalue\n  say how much the arrow stretches\n  label below\n",
+   "prose": "Applying the [matrix](matrix) to an [eigenvector](vector) gives the same arrow, stretched by its [eigenvalue](value)."
+  }
+ },
+ {
+  "id": "gausssum",
+  "label": "Adding 1 to n",
+  "group": "discrete",
+  "doc": {
+   "title": "Adding 1 to n",
+   "formulas": "S = \\frac{n(n + 1)}{2}",
+   "sheet": "concept count: n\n  name last number\n  scrub 1 .. 100 step 1 = 10\nconcept pair: n + 1\n  name each pair\n  say first plus last, second plus second-last: always the same\n  border\nconcept half: \\frac{n(n + 1)}{2}\n  name half the pairs\n  brace below half the pairs\nconcept total: S\n  name sum\n  say 1 + 2 + ... up to the last number\n  label below\n",
+   "prose": "Write the numbers forwards and backwards and add them in pairs. There are [last number](count) pairs, [each pair](pair) the same, and that counts every number twice, so take [half](half) to get the [sum](total)."
+  }
+ },
+ {
+  "id": "handshakes",
+  "label": "Handshakes in a room",
+  "group": "discrete",
+  "doc": {
+   "title": "Handshakes in a room",
+   "formulas": "H = \\frac{n(n - 1)}{2}",
+   "sheet": "concept people: n\n  scrub 2 .. 30 step 1 = 5\nconcept others: n - 1\n  name the others\n  say each person shakes every hand but their own\n  border\nconcept twice: \\frac{n(n - 1)}{2}\n  name counted twice\n  say each handshake has two people, so halve the count\n  brace below counted twice\nconcept total: H\n  name handshakes\n  label below\nplot H over n from 2 to 30\n  y from 0 to 440\n  mark people point n = n\n",
+   "prose": "Each of the [people](people) shakes hands with [the others](others), but that counts every handshake [twice](twice). Drag the people to see how fast the [handshakes](total) grow."
+  }
+ },
+ {
+  "id": "union",
+  "label": "Counting two groups that overlap",
+  "group": "discrete",
+  "doc": {
+   "title": "Counting two groups that overlap",
+   "formulas": "|A \\cup B| = |A| + |B| - |A \\cap B|",
+   "sheet": "concept either: |A \\cup B|\n  name in either\n  label below in either\nconcept first: |A|\n  name in A\nconcept second: |B|\n  name in B\nconcept both: |A \\cap B|\n  name in both\n  say counted once in A and again in B\n  border\nstep Add the two groups\n  formula 1\n  focus first\nstep The overlap counted twice\n  formula 1\n  focus both\nstep Take it away once\n  formula 1\n  strike both\n",
+   "prose": "To count what is [in either](either) group, add what is [in A](first) to what is [in B](second), then take away what is [in both](both), which was counted twice. Press Play."
+  }
+ },
+ {
+  "id": "testresult",
+  "label": "What a positive test means",
+  "group": "probability",
+  "doc": {
+   "title": "What a positive test means",
+   "formulas": "P = \\frac{s r}{s r + (1 - r) f}",
+   "sheet": "concept rate: r\n  name how common\n  say the share of people who have it\n  slider 0.01 .. 0.5 step 0.01 = 0.01\nconcept sensitivity: s\n  name catch rate\n  say the share of those who have it that the test catches\n  slider 0.5 .. 1 step 0.05 = 0.9\nconcept falsealarm: f\n  name false alarm rate\n  say the share of those without it the test flags anyway\n  slider 0 .. 0.3 step 0.01 = 0.09\nconcept chance: P\n  name chance you have it\n  label below\n",
+   "prose": "When something is rare, most positive tests are false alarms. Set [how common](rate) it is, the [catch rate](sensitivity) and the [false alarm rate](falsealarm), then hover the [chance you have it](chance)."
+  }
+ },
+ {
+  "id": "atleastone",
+  "label": "At least one six",
+  "group": "probability",
+  "doc": {
+   "title": "At least one six",
+   "formulas": "P = 1 - \\left(\\frac{5}{6}\\right)^{n}",
+   "sheet": "concept rolls: n\n  scrub 0 .. 30 step 1 = 4\n  label above\nconcept miss: \\frac{5}{6}\n  name one miss\n  say the chance one roll is not a six\n  border\nconcept allmiss: \\left(\\frac{5}{6}\\right)^{n}\n  name all miss\n  say the chance no roll is a six\n  brace below all miss\nconcept chance: P\n  name chance of a six\n  label below\nplot P over n from 0 to 30\n  y from 0 to 1\n  mark rolls point n = n\n",
+   "prose": "The [chance of a six](chance) in some [rolls](rolls) is 1 take away the chance they [all miss](allmiss), and each roll is [one miss](miss) five times in six."
+  }
+ },
+ {
+  "id": "normal",
+  "label": "The bell curve",
+  "group": "probability",
+  "doc": {
+   "title": "The bell curve",
+   "formulas": "f(x) = \\frac{1}{\\sigma \\sqrt{2 \\pi}} e^{-\\frac{(x - \\mu)^2}{2 \\sigma^2}}",
+   "sheet": "concept mean: \\mu\n  say the middle of the curve\n  slider -3 .. 3 step 0.5 = 0\n  label above\nconcept spread: \\sigma\n  name standard deviation\n  say how wide the curve is\n  slider 0.5 .. 3 step 0.25 = 1\nconcept scale: \\frac{1}{\\sigma \\sqrt{2 \\pi}}\n  name height\n  say makes the area under the curve exactly 1\n  border\nconcept distance: x - \\mu\n  name distance from the middle\n  tint\nplot f over x from -6 to 6\n  y from 0 to 0.9\n  mark mean point x = \\mu\n",
+   "prose": "The curve peaks at the [mean](mean) and falls away with the [distance from the middle](distance). A wider [standard deviation](spread) gives a lower [height](scale)."
+  }
+ },
+ {
+  "id": "sigmoid",
+  "label": "The sigmoid function",
+  "group": "ml",
+  "doc": {
+   "title": "The sigmoid function",
+   "formulas": "\\sigma(z) = \\frac{1}{1 + e^{-z}}",
+   "sheet": "concept input: z\n  name score\n  slider -6 .. 6 step 0.5 = 1\nconcept shrink: e^{-z}\n  name shrink\n  say large for low scores, near 0 for high ones\n  border\nplot \\sigma over z from -6 to 6\n  y from 0 to 1\n  mark input point z = z\n",
+   "prose": "The sigmoid turns any [score](input) into a number between 0 and 1. A high score makes the [shrink](shrink) term vanish, leaving 1."
+  }
+ },
+ {
+  "id": "softmax",
+  "label": "Softmax",
+  "group": "ml",
+  "doc": {
+   "title": "Softmax",
+   "formulas": "p_i = \\frac{e^{z_i}}{\\sum_{j} e^{z_j}}",
+   "sheet": "concept score: z_i\n  name score\n  say the raw score for choice i\n  label below\nconcept boost: e^{z_i}\n  name boosted score\n  say always above 0, and higher scores pull far ahead\n  border\nconcept total: \\sum_{j} e^{z_j}\n  name all boosted scores\n  brace below all boosted scores\nconcept share: p_i\n  name share\n  say the chance given to choice i\n  label below\n",
+   "prose": "Each [score](score) becomes a [boosted score](boost), and its [share](share) is its part of [all boosted scores](total). The shares add up to 1."
+  }
+ },
+ {
+  "id": "mse",
+  "label": "Mean squared error",
+  "group": "ml",
+  "doc": {
+   "title": "Mean squared error",
+   "formulas": "L = \\frac{1}{n} \\sum_{i=1}^{n} (y_i - \\hat{y}_i)^2",
+   "sheet": "concept loss: L\n  name error\n  label below\nconcept average: \\frac{1}{n} \\sum_{i=1}^{n}\n  name average\n  brace below average\nconcept miss: y_i - \\hat{y}_i\n  name miss\n  say the true value take away the guess\n  border\nconcept guess: \\hat{y}_i\n  name guess\n  say what the model predicts for example i\n  tint\n",
+   "prose": "The [error](loss) is the [average](average) of each [miss](miss) squared, so a [guess](guess) twice as far off costs four times as much."
+  }
+ },
+ {
+  "id": "pendulum",
+  "label": "Period of a pendulum",
+  "group": "physics",
+  "doc": {
+   "title": "Period of a pendulum",
+   "formulas": "T = 2 \\pi \\sqrt{\\frac{L}{g}}",
+   "sheet": "concept length: L\n  unit m\n  slider 0.1 .. 3 step 0.1 = 1\n  label above\nconcept gravity: g\n  unit m/s²\n  say the pull of gravity: 9.8 on Earth, 1.6 on the Moon\n  slider 1 .. 25 step 0.1 = 9.8\nconcept period: T\n  unit s\n  say the time for one swing there and back\n  label below\nplot T over L from 0.1 to 3\n  y from 0 to 4\n  mark length point L = L\n",
+   "prose": "A longer [length](length) swings slower; stronger [gravity](gravity) swings faster. The [period](period) does not depend on how heavy the weight is."
+  }
+ },
+ {
+  "id": "falling",
+  "label": "Distance under steady speeding up",
+  "group": "physics",
+  "doc": {
+   "title": "Distance under steady speeding up",
+   "formulas": "s = u t + \\frac{1}{2} a t^2",
+   "sheet": "concept start: u\n  name starting speed\n  unit m/s\n  slider 0 .. 20 step 1 = 5\nconcept speedup: a\n  name speeding up\n  unit m/s²\n  slider -10 .. 10 step 0.5 = 2\nconcept time: t\n  unit s\n  slider 0 .. 10 step 0.5 = 3\nconcept distance: s\n  unit m\n  label below\nplot s over t from 0 to 10\n  y from -20 to 160\n  mark time point t = t\n",
+   "prose": "The [distance](distance) is what the [starting speed](start) covers plus what the [speeding up](speedup) adds, and that part grows with the square of the [time](time)."
   }
  }
 ]

@@ -152,5 +152,26 @@
     "find": "    tiles::press(t, c, k).filter(|(after, _)| !after.is_empty())",
     "replace": "    tiles::press(t, c, k)",
     "test": "keys_write_the_formula_and_a_key_that_does_not_fit_is_off"
+  },
+  {
+    "name": "the Teacher menu loses its field headings",
+    "file": "crates/core/src/api.rs",
+    "find": "                s(&state, &format!(\"field_{}\", e.group))",
+    "replace": "                String::new()",
+    "test": "the_teacher_menu_heads_each_field_once_and_a_student_menu_has_no_headings"
+  },
+  {
+    "name": "a student's menu is headed by field",
+    "file": "crates/core/src/api.rs",
+    "find": "            field: if state.role == \"teach\" {",
+    "replace": "            field: if !state.role.is_empty() {",
+    "test": "the_teacher_menu_heads_each_field_once_and_a_student_menu_has_no_headings"
+  },
+  {
+    "name": "the script l names no value",
+    "file": "crates/core/src/eval.rs",
+    "find": "0x210E | 0x2113 | 0x1D434",
+    "replace": "0x210E | 0x1D434",
+    "test": "the_new_examples_compute_values_worked_out_by_hand"
   }
 ]

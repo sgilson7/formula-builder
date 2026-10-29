@@ -168,8 +168,9 @@ dialog textarea { margin: 8px 0; }
 /* the student modes (journal page 5): tiles, keys, the card, blocks */
 .side { display: grid; gap: 14px; min-width: 0; }
 .switch { background: var(--canvas); border: var(--stroke) solid #3b2340; border-radius: 7px; padding: 3px 9px; }
-.tiles { display: grid; gap: 8px; }
-.tile-lines { display: grid; gap: 6px; border: var(--stroke) solid var(--line); border-radius: 8px; background: #fff; color: #3b2340; padding: 8px; min-height: 52px; }
+/* a fraction line of tiles cannot wrap; it scrolls inside its box, so the keypad keeps the column's width */
+.tiles { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+.tile-lines { display: grid; grid-template-columns: minmax(0, 1fr); overflow-x: auto; gap: 6px; border: var(--stroke) solid var(--line); border-radius: 8px; background: #fff; color: #3b2340; padding: 8px; min-height: 52px; }
 .tile-lines:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .tline { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; padding: 4px; border-radius: 6px; font: 22px/1.2 "STIX Two Math", "Cambria Math", "Times New Roman", serif; }
 .tline.on { background: var(--canvas); outline: 2px dashed #1d6fa3; }

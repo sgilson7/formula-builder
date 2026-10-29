@@ -67,6 +67,7 @@ Every `SECOND-ORDER.md` row with status *person*, by number, with what the perso
 - R1.14: read the five examples and the strings in `data/strings.json`; send formulas from your own courses (FB-Q2).
 - R2.2: FB-Q11 to FB-Q15 took their defaults (R2.4); still yours: a session with sixth graders.
 - R2.11: read the student words, the menu words and the six shelf formulas, all written by the agent.
+- R3.7: read the 32 new examples (formulas, cards, sentences, starting values) and the nine menu headings, all written by the agent.
 - R1.5: answered on 2026-10-28 for FB-Q1, FB-Q3, FB-Q4 and FB-Q5; FB-Q2 and FB-Q6 to FB-Q10 took their defaults.
 
 ## Mistakes so far

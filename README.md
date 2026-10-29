@@ -17,6 +17,8 @@ The editor opens in **Build**, made for students with no LaTeX and no code on sc
 
 **Explore** is for reading: hover, drag, slide and play, with nothing to change. A link a student shares opens there. **Teacher** has everything, every export, and a switch that shows the LaTeX and the sheet beside the cards and blocks.
 
+The Teacher mode's examples menu has 43 starting formulas under nine headings: the sixth-grade shelf, formulas from the documents the paper analysed (the rendering equation, the discrete Fourier transform, Bayes' theorem, the Bellman equation and more), algebra, calculus, linear algebra, discrete mathematics, probability and statistics, machine learning and physics.
+
 ## Colour-vision views
 
 Colour is the paper's most common augmentation, so every concept also carries an underline pattern (solid, dashed, dotted, wave, double) and a number, in every view and every export.

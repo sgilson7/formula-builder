@@ -45,7 +45,8 @@ pub struct Example {
     pub id: String,
     pub label: String,
     pub doc: Doc,
-    /// `shelf` for the sixth-grade formulas a student starts from
+    /// `shelf` for the sixth-grade formulas a student starts from; any other
+    /// group is a field of mathematics, headed by its `field_` string
     #[serde(default)]
     pub group: String,
 }
@@ -196,6 +197,16 @@ pub struct TileLine {
     pub on: bool,
 }
 
+/// An entry in the examples menu. `field` is the heading it sits under in
+/// the Teacher mode, and empty for a student, whose menu is the shelf alone.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ExampleUi {
+    pub id: String,
+    pub label: String,
+    pub on: bool,
+    pub field: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct KeyUi {
     pub id: String,
@@ -249,7 +260,7 @@ pub struct Ui {
     pub fragment: String,
     pub view: String,
     pub views: Vec<Choice>,
-    pub examples: Vec<Choice>,
+    pub examples: Vec<ExampleUi>,
     pub errors: Vec<String>,
     pub formula_svg: String,
     pub plot_svg: String,
@@ -1088,10 +1099,15 @@ fn ui(state: State, hints: Vec<Hint>, out: Option<Out>) -> Ui {
         .examples
         .iter()
         .filter(|e| state.role == "teach" || e.group == "shelf")
-        .map(|e| Choice {
+        .map(|e| ExampleUi {
             id: e.id.clone(),
             label: e.label.clone(),
             on: e.doc == state.doc,
+            field: if state.role == "teach" {
+                s(&state, &format!("field_{}", e.group))
+            } else {
+                String::new()
+            },
         })
         .collect();
     let (tiles, keys) = tiles_ui(&state, &m);
@@ -2587,6 +2603,64 @@ mod tests {
                 .open,
             "build"
         );
+    }
+
+    #[test]
+    fn the_teacher_menu_heads_each_field_once_and_a_student_menu_has_no_headings() {
+        let strings = include_str!("../../../data/strings.json");
+        let examples = include_str!("../../../data/examples.json");
+        let all: Vec<Example> = serde_json::from_str(examples).unwrap();
+        let words: serde_json::Value = serde_json::from_str(strings).unwrap();
+        let v = json(&start(strings, examples, "", "edit"));
+        let kid = v["ok"]["examples"].as_array().unwrap();
+        assert_eq!(kid.len(), all.iter().filter(|e| e.group == "shelf").count());
+        assert!(
+            kid.iter().all(|e| e["field"] == ""),
+            "a student's menu is the shelf, unheaded"
+        );
+        let t = step(&v, "role.set", "teach");
+        let menu = t["ok"]["examples"].as_array().unwrap();
+        assert_eq!(menu.len(), all.len());
+        let mut heads: Vec<&str> = Vec::new();
+        for (e, item) in all.iter().zip(menu) {
+            let head = item["field"].as_str().unwrap();
+            assert!(!head.is_empty(), "{} has no heading", e.id);
+            assert_eq!(head, words[format!("field_{}", e.group)].as_str().unwrap());
+            if heads.last() != Some(&head) {
+                assert!(!heads.contains(&head), "{head} is split in two");
+                heads.push(head);
+            }
+        }
+        // the shelf, the paper's sources, and seven fields
+        assert_eq!(heads.len(), 9);
+    }
+
+    #[test]
+    fn the_new_examples_compute_values_worked_out_by_hand() {
+        let all: Vec<Example> = serde_json::from_str(include_str!("../../../data/examples.json")).unwrap();
+        let value = |id: &str, name: &str| {
+            let e = all.iter().find(|e| e.id == id).unwrap();
+            let m = Model::build(&e.doc);
+            let values = m.values(&[], None);
+            let name = crate::tex::canon(&crate::tex::parse(name).unwrap());
+            m.scope(&values).value_of(&name, &[]).unwrap().format(3)
+        };
+        // worked by hand from each sheet's starting values
+        assert_eq!(value("handshakes", "H"), "10.000"); // 5 x 4 / 2
+        assert_eq!(value("gausssum", "S"), "55.000"); // 10 x 11 / 2
+        assert_eq!(value("determinant", "D"), "5.000"); // 3 x 2 - 1 x 1
+        assert_eq!(value("metrics", "d"), "5.000"); // sqrt(3^2 + 4^2)
+        assert_eq!(value("metrics", "m"), "7.000"); // 3 + 4
+        assert_eq!(value("perimeter", "P"), "14.000"); // 2 x 5 + 2 x 2
+        assert_eq!(value("rectangle", "A"), "12.000"); // 4 x 3, with the script l
+        assert_eq!(value("box", "V"), "30.000"); // 5 x 3 x 2
+        assert_eq!(value("mean", "m"), "7.000"); // (4 + 7 + 10) / 3
+        assert_eq!(value("percent", "p"), "20.000"); // 25 / 100 x 80
+        assert_eq!(value("circle", "C"), "6.283"); // 2 pi x 1
+        assert_eq!(value("testresult", "P"), "0.092"); // 0.009 / (0.009 + 0.0891)
+        assert_eq!(value("atleastone", "P"), "0.518"); // 1 - 625/1296
+        assert_eq!(value("pendulum", "T"), "2.007"); // 2 pi sqrt(1 / 9.8)
+        assert_eq!(value("momentum", "E"), "0.058"); // ((sqrt 50 - 1)/(sqrt 50 + 1))^10
     }
 
     #[test]
